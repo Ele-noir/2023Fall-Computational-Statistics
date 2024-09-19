@@ -1,0 +1,180 @@
+---
+title: "Chapter 4 Problem 4.1 a+b"
+author: "Lizhuo ZHOU 20307100132"
+output: pdf_document
+date: '2023-10-30'
+---
+
+
+### Problem 4.1
+
+
+(a)  Derive the EM algorithm for maximum likelihood estimation of $P_{c}$,$P_{I}$, and $P_{T}$ for this modified problem having observed data $N_{c}$,$N_{I}$, and $N_{U}$ as given above. 
+
+\
+\ \  From the statement of problem 4.1, the $n_{u}=578$ more moths that were known to be $\textit{insularia}$ or $\textit{typical}$(whose exact phenotypes could not be determined) would change the conditional expectation of $N_{II},N_{IT},N_{TT}$.
+\
+\ \ Total number of peppered moth analyzed: $n=n_{C}+n_{I}+n_{T}+n_{U}$
+\
+\ \ $E\{N_{CC}|n_{C},n_{I},n_{T},n_{U},p^{(t)}\}=n_{CC}^{(t)}=\dfrac{n_{C}(p_{c}^{(t)})^{2}}{(p_{c}^{(t)})^{2}+2p_{c}^{(t)}p_{I}^{(t)}+2p_{c}^{(t)}p_{T}^{(t)}}$
+\
+\ \ $E\{N_{CI}|n_{C},n_{I},n_{T},n_{U},p^{(t)}\}=n_{CI}^{(t)}=\dfrac{2n_{C}p_{c}^{(t)}p_{I}^{(t)}}{(p_{c}^{(t)})^{2}+2p_{c}^{(t)}p_{I}^{(t)}+2p_{c}^{(t)}p_{T}^{(t)}}$
+\
+\ \ $E\{N_{CT}|n_{C},n_{I},n_{T},n_{U},p^{(t)}\}=n_{CT}^{(t)}=\dfrac{2n_{C}p_{c}^{(t)}p_{T}^{(t)}}{(p_{c}^{(t)})^{2}+2p_{c}^{(t)}p_{I}^{(t)}+2p_{c}^{(t)}p_{T}^{(t)}}$
+\
+\ \ $E\{N_{II}|n_{C},n_{I},n_{T},n_{U},p^{(t)}\}=n_{II}^{(t)}=\dfrac{n_{I}(p_{I}^{t})^{2}}{(p_{I}^{(t)})^{2}+2p_{I}^{(t)}p_{T}^{(t)}}+\dfrac{n_{U}(p_{I}^{(t)})^{2}}{(p_{I}^{(t)})^{2}+2p_{I}^{(t)}p_{T}^{(t)}+(p_{T}^{(t)})^{2}}$
+\
+\ \ $E\{N_{IT}|n_{C},n_{I},n_{T},n_{U},p^{(t)}\}=n_{IT}^{(t)}=\dfrac{2n_{I}p_{I}^{(t)}p_{T}^{(t)}}{(p_{I}^{(t)})^{2}+2p_{I}^{(t)}p_{T}^{(t)}}+\dfrac{2n_{U}p_{I}^{(t)}p_{T}^{(t)}}{(p_{I}^{(t)})^{2}+2p_{I}^{(t)}p_{T}^{(t)}+(p_{T}^{(t)})^{2}}$
+\
+\ \ $E\{N_{TT}|n_{C},n_{I},n_{T},n_{U},p^{(t)}\}=n_{TT}^{(t)}=n_{T}+\dfrac{n_{U}(p_{T}^{(t)})^{2}}{(p_{I}^{(t)})^{2}+2p_{I}^{(t)}p_{T}^{(t)}+(p_{T}^{(t)})^{2}}$
+\
+\ \ Therefore, for the E-Step we have found:
+\
+\ \ $Q(p|p^{(t)})=n_{CC}^{(t)}log\{p_{c}^{2}\}+n_{CI}^{(t)}log\{2p_{c}p_{I}\}+n_{CT}^{(t)}log\{2p_{c}p_{T}\}+n_{II}^{(t)}log\{p_{I}^{2}\}+n_{IT}^{(t)}log\{2p_{I}p_{T}\}+n_{TT}^{(t)}log\{p_{T}^{2}\}+k(n_{C},n_{I},n_{T},n_{U},p^{(t)})$
+\
+\ \ Differentiating w.r.t. $p_{c},p_{I}$:
+\
+\ \ $\dfrac{\partial Q(p|p^{(t)})}{\partial p_{c}}=\dfrac{2n_{CC}^{(t)}+n_{CI}^{(t)}+n_{CT}^{(t)}}{p_{c}}-\dfrac{2n_{TT}^{(t)}+n_{CT}^{(t)}+n_{IT}^{(t)}}{1-p_{c}-p_{I}}$
+\
+\ \ $\dfrac{\partial Q(p|p^{(t)})}{\partial p_{I}}=\dfrac{2n_{II}^{(t)}+n_{IT}^{(t)}+n_{CI}^{(t)}}{p_{I}}-\dfrac{2n_{IT}^{(t)}+n_{CT}^{(t)}+n_{IT}^{(t)}}{1-p_{c}-p_{I}}$
+\
+\ \ For the M-step, setting these derivatives equal to zero and solving for $p_{c}$, $p_{I}$ and $p_{T}$, yielding:
+\
+\ \ $p_{c}^{(t+1)}=\dfrac{2n_{CC}^{(t)}+n_{CI}^{(t)}+n_{CT}^{(t)}}{2n}$
+\
+\ \ $p_{I}^{(t+1)}=\dfrac{2n_{II}^{(t)}+n_{IT}^{(t)}+n_{CI}^{(t)}}{2n}$
+\
+\ \ $p_{T}^{(t+1)}=\dfrac{2n_{TT}^{(t)}+n_{CT}^{(t)}+n_{IT}^{(t)}}{2n}$
+
+
+
+(b)
+
+```{r}
+#Apply the algorithm to find the MLEs
+
+rm(list=ls())
+# Import the observed data
+x<-c(85,196,341,578)
+#Define initial values
+n<-rep(0,6)
+p<-rep(1/3,3)
+#Set the maximal iterations
+iter<-10000
+#Define E-Step
+allele.e=function(x,p){
+    n.cc = (x[1]*(p[1]^2))/((p[1]^2)+2*p[1]*p[2]+2*p[1]*p[3])
+    n.ci = (2*x[1]*p[1]*p[2])/((p[1]^2)+2*p[1]*p[2]+2*p[1]*p[3])
+    n.ct = (2*x[1]*p[1]*p[3])/((p[1]^2)+2*p[1]*p[2]+2*p[1]*p[3])
+    n.ii = (x[2]*p[2]^2)/(p[2]^2+2*p[2]*p[3])+(x[4]*p[2]^2)/(p[2]^2+2*p[2]*p[3]+p[3]^2)
+    n.it = (x[2]*2*p[2]*p[3])/(p[2]^2+2*p[2]*p[3])+(x[4]*2*p[2]*p[3])/(p[2]^2+2*p[2]*p[3]+p[3]^2)
+    n.tt =  x[3]+(x[4]*p[3]^2)/(p[2]^2+2*p[2]*p[3]+p[3]^2)
+    n= c(n.cc,n.ci,n.ct,n.ii,n.it,n.tt)
+    return(n)
+}
+
+#Define M-Step
+allele.m = function(x,n){
+    p.c = (2*n[1]+n[2]+n[3])/(2*sum(x))
+    p.i = (2*n[4]+n[5]+n[2])/(2*sum(x))
+    p.t = (2*n[6]+n[3]+n[5])/(2*sum(x))
+    p = c(p.c,p.i,p.t)
+    return(p)
+}
+
+#Iterate
+k=1
+while (k < iter){
+  k=k+1
+  n=allele.e(x=x,p=p)
+  p.process=p
+  p=allele.m(x=x,n=n)
+  R=sum((p-p.process)^2)/sum(p.process^2)
+  if (R<0.00000001) break
+}
+
+k
+
+
+
+```
+
+```{r}
+R
+
+```
+
+```{r}
+p
+
+```
+\
+\ \ The MLEs found by the EM-algorithm is:
+\
+\ \ $p=(\hat{p_{c}},\hat{p_{I}},\hat{p_{T}})=(0.03606708,0.19586010,0.76807282)$
+
+
+```{r}
+#Calculate the variance of the estimated parameter in 4.1b, using any available method
+#Try the SEM Method
+
+p <- c(0.07, 0.19, 0.74)
+p.em <- p
+itr<-10000
+theta <- matrix(0,3,3)
+psi <- rep(0,3)
+r <- matrix(0,3,3)
+
+## COMPUTES EM ALGORITHM ESTIMATES
+for(i in 1:itr){
+    n.em = allele.e(x,p.em)
+    p.em = allele.m(x,n.em)
+}
+
+## INTIALIZES THETA
+for(j in 1:length(p)){
+    theta[,j] = p.em
+    theta[j,j] = p[j]
+}
+
+## MAIN
+for(t in 1:5){
+    n = allele.e(x,p)
+    p.hat = allele.m(x,n)
+    for(j in 1:length(p)){
+        theta[j,j] = p.hat[j]
+        n = allele.e(x,theta[,j])
+        psi = allele.m(x,n)
+        for(i in 1:length(p)){
+            r[i,j] = (psi[i]-p.em[i])/(theta[j,j]-p.em[j])
+        }
+    }
+    p = p.hat
+}
+
+
+## COMPLETE INFORMATION
+iy.hat=matrix(0,2,2)
+iy.hat[1,1] = ((2*n.em[1]+n.em[2]+n.em[3])/(p.em[1]^2) +
+     (2*n.em[6]+n.em[3]+n.em[5])/(p.em[3]^2))
+iy.hat[2,2] = ((2*n.em[4]+n.em[5]+n.em[2])/(p.em[2]^2) +
+     (2*n.em[6]+n.em[3]+n.em[5])/(p.em[3]^2))
+iy.hat[1,2] = iy.hat[2,1] = (2*n.em[6]+n.em[3]+n.em[5])/(p.em[3]^2)
+
+## COMPUTES STANDARD ERRORS AND CORRELATIONS
+var.hat <- solve(iy.hat)%*%(diag(2)+t(r[-3,-3])%*%solve(diag(2)-t(r[-3,-3])))
+var.hat_pi <- c(var.hat[1,1],var.hat[2,2],sum(var.hat))
+
+## OUTPUT
+var.hat_pi  # STANDARD ERROR ESTIMATES (pc, pi, pt)
+
+
+```
+\
+\ \ Conclusion:
+\
+ \ \ The variance of the estimated parameter is $\hat{Var(\hat{p})}=Var(\hat{p_{c}},\hat{p_{I}},\hat{p_{T}})=(0.0000147508,0.0001235430,0.0001295754)$
+
+
+
+

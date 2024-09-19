@@ -1,0 +1,202 @@
+---
+title: "Chapter 9 Problem 1"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-12-18"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+1. Assume $\{X_{i}\},i=1,...,100$ is a sequence of iid standard normal random variables, and $Y_{i}$ satisfies the following regression$Y_{i}=X_{i}+\epsilon_{i},\epsilon_{i} \sim N(0,\sigma^{2})$. Suppose $\sigma^{2}=2$.
+
+Please use paired bootstrap, bootstrap  residual and bootstrap error to compare the variance of regression coefficient estimates
+
+\
+\ \ From the statement, we could see that $Y_{i} \sim N(0,3),i=1,2,...,100$.
+\
+\ \ From the background knowledge of regression analysis, $\hat{\beta}=(X^{T}X)^{-1}X^{T}y$
+
+```{r 1}
+# First sample the independent variables
+set.seed(10048)
+X<-rnorm(100,0,1)
+Y<-rnorm(100,0,3)
+XY<-cbind(X,Y)
+```
+
+## Solution I: Paired Bootstrap
+
+\
+\ \ By definition of paired bootstrap, bootstrap $\{Z_{i}=(X_{i},Y_{i})\},i=1,2,...,n$
+
+```{r 2}
+# Solution I: Paired Bootstrap
+# Sample size: 10 pairs each time; Sample times: 100
+
+PB_coefficient_estimate<-c()
+sample_PB_X<-matrix(0,nrow=10,ncol=1)
+sample_PB_Y<-matrix(0,nrow=10,ncol=1)
+beta_PB_estimate<-c()
+sample_matrix<-matrix(0,nrow=100,ncol=10)
+
+set.seed(100345)
+for(i in 1:100){sample_matrix[i,]<-sample(1:100,10,replace=TRUE)}
+
+for(j in 1:100){
+  sample_index<-sample_matrix[j,]
+  for (k in 1:10){
+    sample_PB_X[k,1]<-XY[sample_index[k],1]
+    sample_PB_Y[k,1]<-XY[sample_index[k],2]
+  }
+  beta_PB_estimate[j]<-(t(sample_PB_X)%*%sample_PB_X)^(-1)*t(sample_PB_X)%*%sample_PB_Y
+  
+  
+}
+
+# The variance of regression coefficient estimates——by paired bootstrap
+var(beta_PB_estimate)
+
+
+```
+
+
+## Solution II: Bootstrap Residual
+\
+\ \ By definition of bootstrapping residual, $Y_{i,Boot}=Y_{i, Pred}+R_{rand}$
+```{r 3}
+
+# Solution II: Bootstrap Residual
+# Sample size: 10 pairs each time; Sample times: 100
+# Prepare samples
+library(tidyverse)
+
+df=tibble(
+  ID=1:100,
+  X=X,
+  Y=Y)
+
+df
+
+```
+
+```{r 4}
+# Initial linear regression, save the estimated coefficient
+fit_lm<-lm(Y~X,df)
+b=coef(fit_lm)
+b
+
+```
+
+```{r 5}
+# Residual and estimated coefficient used for Bootstrap
+res=tibble(
+  ID=1:100,
+  resid=fit_lm$residuals,
+  pred=fit_lm$fitted.values)
+
+res
+
+```
+
+```{r 6}
+library(rsample)
+
+set.seed(12345)
+
+Residual_boostrap = bootstraps(res, times = 1000) %>% 
+  mutate(data = map(splits, analysis)) %>% 
+  select(-1) %>% 
+  unnest(data) %>% 
+  mutate(weightboot = resid + pred) %>% 
+  left_join(df, by = "ID") 
+
+Residual_boostrap
+```
+
+```{r 7}
+
+rlt = Residual_boostrap %>% 
+  group_nest(id) %>% 
+  mutate(model = map(data, ~ lm(weightboot ~ X, .x)),
+         coefs = map(model, coef)) %>% 
+  unnest_wider(coefs)
+
+rlt
+```
+```{r 8}
+
+# The variance of regression coefficient estimates——by residual bootstrapping
+var(rlt$X)
+
+```
+
+## Solution III: Bootstrap Error
+\
+\ \ By definition of bootstrapping error, first we estimate $\hat{\sigma^{2}}$, and then generate $\epsilon^{\star}_{i} \sim N(0,\hat{\sigma^{2}})$
+
+
+```{r 9}
+# Solution III: Bootstrap Error
+
+# Estimated sigma_hat
+sigma_hat<-var(res$resid)
+# Generate a sequence of residual based on the estimated sigma_hat
+set.seed(10057)
+residual_star<-rnorm(100,0,sigma_hat^0.5)
+
+error_bootstrap=tibble(
+  ID=1:100,
+  resid=residual_star,
+  pred=fit_lm$fitted.values)
+
+error_bootstrap
+
+
+```
+
+```{r 10}
+
+set.seed(10089)
+
+Error_boostrap = bootstraps(error_bootstrap, times = 1000) %>% 
+  mutate(data = map(splits, analysis)) %>% 
+  select(-1) %>% 
+  unnest(data) %>% 
+  mutate(bootstrapy = resid + pred) %>% 
+  left_join(df, by = "ID") 
+
+Error_boostrap
+
+```
+
+
+```{r 11}
+
+rlt_error = Error_boostrap %>% 
+  group_nest(id) %>% 
+  mutate(model = map(data, ~ lm(bootstrapy ~ X, .x)),
+         coefs = map(model, coef)) %>% 
+  unnest_wider(coefs)
+
+rlt_error
+
+
+```
+
+
+
+```{r 12}
+# The variance of regression coefficient estimates——by bootstrapping error
+var(rlt_error$X)
+
+```
+\
+\ \ Conclusion:
+\
+\ \ Using paired bootstrap, the variance of the estimated regression coefficient is 1.149478;
+\
+\ \ Using bootstrap residual, the variance of the estimated regression coefficient is 0.08873295;
+\
+\ \ Using bootstrap error, the variance of the estimated regression coefficient is 0.0800907.

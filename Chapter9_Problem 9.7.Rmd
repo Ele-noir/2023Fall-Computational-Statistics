@@ -1,0 +1,86 @@
+---
+title: "Chapter 9_Problem 9.7"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-12-18"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+## Part I: Use the problem of estimating the mean of a standard Cauchy distribution to illustrate how the bootstrap can fail for heavy-tailed distributions
+
+\
+\ \ 
+
+```{r}
+# Part I
+
+set.seed(122)
+n <- 1000
+original_sample <- rcauchy(n)
+num_bootstraps <- 1000
+bootstrap_means <- numeric(num_bootstraps)
+
+# Perform the bootstrap resampling
+for (i in 1:num_bootstraps) {
+  bootstrap_sample <- sample(original_sample, size = n, replace = TRUE)
+  bootstrap_means[i] <- mean(bootstrap_sample)
+}
+
+# Plot the distribution of bootstrap sample means
+hist(bootstrap_means, breaks = 50, main = "Bootstrap Means of Standard Cauchy Samples", xlab = "Mean")
+
+cat("Bootstrap Mean of Means:", mean(bootstrap_means), "\n")
+cat("Bootstrap SD of Means:", sd(bootstrap_means), "\n")
+
+```
+
+## Part II: Use the problem of estimating $\theta$ for the Unif(0,$\theta$) distribution to illustrate how the bootstrap can fail for extremes.
+
+```{r}
+# Part II
+set.seed(1774)
+
+# True parameter theta
+theta <- 15
+
+# Generate a sample of size n from a Unif(0, theta) distribution
+n <- 100
+original_sample <- runif(n, 0, theta)
+
+num_bootstraps <- 1000
+
+# Initialize a vector to store the bootstrap estimates of theta (maximum values)
+bootstrap_maxima <- numeric(num_bootstraps)
+
+# Perform the bootstrap resampling
+for (i in 1:num_bootstraps) {
+  bootstrap_sample <- sample(original_sample, size = n, replace = TRUE)
+  bootstrap_maxima[i] <- max(bootstrap_sample)
+}
+
+# Plot the distribution of bootstrap estimates for theta
+hist(bootstrap_maxima, breaks = 50, main = "Bootstrap Estimates of Theta", xlab = "Estimated Theta")
+
+# Calculate and print the mean of the bootstrap estimates of theta
+bootstrap_theta_mean <- mean(bootstrap_maxima)
+cat("Bootstrap Mean of Theta Estimates:", bootstrap_theta_mean, "\n")
+
+# Calculate and print the bias and the standard deviation of the bootstrap estimates
+bootstrap_bias <- bootstrap_theta_mean - theta
+bootstrap_sd <- sd(bootstrap_maxima)
+cat("Bootstrap Bias of Theta Estimates:", bootstrap_bias, "\n")
+cat("Bootstrap SD of Theta Estimates:", bootstrap_sd, "\n")
+
+
+```
+\
+\ \ Conclusion:
+\
+\ \ For part I, with background knowledge we know that, a standard Cauchy distribution is an example of a heavy-tailed distribution, and it does not have a defined mean. From the example above, we could see the bootstrap method fail for heavy-tailed distributions, as this property indicates that extreme values are more common, thus these extreme values may heavily influence the sample mean, leading to high variability in the bootstrap estimates.
+\
+\ \ When applying the bootstrap to a sample from a Cauchy distribution and calculate the mean for each resample, you will likely get a very wide distribution of means that does not converge to any particular value, even as the sample size increases, as shown in the plot.
+\
+\ \ For part II, we could see that the bootstrap fails for extremes.When bootstrapping, each resample is taken from the original sample, meaning that the bootstrap samples will never contain a value larger than the maximum observed value M. As a result, the bootstrap distribution of $\theta$ will be biased downwards, as it cannot account for the possibility of larger values that could be observed in a new sample.
+

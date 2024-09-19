@@ -1,0 +1,167 @@
+---
+title: "Chapter 9_Problem 9.6 a+b+c"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-12-18"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r}
+# Read the data
+
+rm(list=ls())
+earthquake<-read.table("earthquake.dat",header = TRUE)
+earthquake<-as.matrix(earthquake)
+
+```
+
+
+## (a)
+
+\
+\ \ Plot the ACF for reference.
+
+```{r}
+# Problem 9.6 a
+acf(earthquake,main="Earthquake")
+
+```
+\
+\ \ From the plot, we could see that when lag $\geq 6$, there is no autocorrelation.
+\
+\ \ So from ACF, we choose lag $=5$
+
+## (b)
+
+\
+\ \ First, save the blocks into a matrix.
+
+```{r}
+
+block<-matrix(0,nrow=94,ncol=6)
+
+for (i in 1:94){
+  block[i,1]=earthquake[i]
+  block[i,2]=earthquake[i+1]
+  block[i,3]=earthquake[i+2]
+  block[i,4]=earthquake[i+3]
+  block[i,5]=earthquake[i+4]
+  block[i,6]=earthquake[i+5]
+}
+
+```
+
+\
+\ \ To observe the annual change, we take difference of block by row.
+
+```{r}
+
+blockdiff<-matrix(0,nrow=94,ncol=5)
+for (i in 1:94){
+  blockdiff[i,]=diff(block[i,])
+}
+
+```
+
+\
+\ \ Now we conduct moving block bootstrap, use the mean of every group as an estimate of the annual change.
+
+
+```{r}
+b=1000
+bootres<-matrix(0,nrow=94,ncol=b)
+for (i in 1:b){
+  set.seed(197)
+  sam<-sample(c(1:94),94,replace = TRUE)
+  blockboot<-blockdiff[sam,]
+  for (k in 1:94){
+    bootres[k,i]<-sum(blockboot[k,])/5
+  }
+}
+bootres<-as.vector(bootres)
+hist(bootres)
+
+```
+
+\
+\ \ Therefore, we could get an annual change bar plot, and export the 90% quantile.
+
+```{r}
+quantile(bootres,0.9)
+```
+
+\
+\ \ The 90% quantile is: 2.4. Export the standard error.
+
+```{r}
+
+sqrt(sum((bootres-sum(bootres)/length(bootres))^2)/(length(bootres)-1))
+
+```
+
+\
+\ \ The estimate of this estimate's standard error is 1.664595.
+
+## (c)
+\
+\ \ Use the bootstrap. First fit the AR(1) model, we have the residual and $\hat{\alpha}$
+
+```{r}
+model1<-arima(earthquake,order=c(1,0,0))
+alphahat1<-model1$coef[1]
+miu<-model1$coef[2]
+
+```
+\
+\ \ De-averaging the sequence
+
+```{r}
+earthmiu<-earthquake-miu
+
+```
+
+\
+\ \ Then fit the zero-mean sequence with AR(1), and we get the residual of the zero-mean item. Extract a residual as the starting term $x_{0}$, and simulate a time sequence.
+\
+\ \ Take difference of the time sequence and calculate the standard deviation, and calculate the simulated results of the annual change's standard deviation which is stored in the standard deviation matrix. Duplicate the steps above for multiple ties and we can get the simulation for standard deviation.
+
+
+```{r}
+
+set.seed(228)
+model2<-arima(earthmiu,order=c(1,0,0))
+error<-model2$residuals
+alphahat2<-model2$coef[1]
+miu2<-model2$coef[2]
+sdmatrix<-matrix(0,nrow=b)
+for (i in 1:b){
+Xboot<-matrix(0,nrow=1,ncol=100)
+pseu<-sample(error,100,replace = TRUE)
+Xboot[1]<-pseu[1]
+for (k in 2:100){
+  Xboot[k]<-Xboot[k-1]*alphahat2+pseu[k]
+}
+Xbootdiff<-Xboot[2:100]-Xboot[1:99]
+sdmatrix[i]<-sd(Xbootdiff)
+}
+hist(sdmatrix, main="Histogram of Standard Error Matrix")
+
+```
+
+
+```{r}
+sum(sdmatrix)/(length(sdmatrix))
+
+```
+\
+\ \ The estimate of the standard error is 6.903315.
+
+
+
+
+
+

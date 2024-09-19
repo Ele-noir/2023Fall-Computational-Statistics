@@ -1,0 +1,166 @@
+---
+title: "Chapter 6 Problem 6.3 b+c"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-11-20"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+(a) Estimate $\sigma^{2}$ using importance sampling with standardized weights.
+\
+\ \ Basic Idea:
+\
+\ \ Utilize appropriate sampling methods to draw samples, and use the unbiased estimator(sample variance) of total variance in order to estimate.
+
+```{r}
+# Problem 6.3(a)
+# First, write the function
+rm(list=ls())
+Q=function(x){
+  exp(-abs(x)^3/3)
+}
+
+# Importance Sampling
+# Choose a distribution that is easy to sample, and then draw m samples.
+# Consider standard normal sampling
+# Write the pdf of standard normal distribution
+
+# First draw m as large as possible to satisfy the convergence criterion of this method.
+
+set.seed(1121)
+Y<-rnorm(100000,mean=0,sd=1)
+phi<-function(x){
+  exp(-x^2/2)/sqrt(2*pi)
+}
+
+# Define weights: weight_star(y)=Q(y)/phi(y)
+# Standardization: weight_star/sum(weight_star)
+
+weight_star<-function(x){
+  Q(x)/phi(x)
+}
+sd_weight<-weight_star(Y)/sum(weight_star(Y))
+
+
+# Sampling in y according to the weights calculated
+# Draw 100 samples
+
+Samples_1<-sample(Y,10000,prob=sd_weight,replace = TRUE)
+
+
+# Estimate the  sigma^2 from the samples drawn
+
+
+hat_sigmasquare_1<-sum((Samples_1-sum(Samples_1)/length(Samples_1))^2)/(length(Samples_1)-1)
+hat_sigmasquare_1
+
+
+```
+
+
+(b) Repeat the estimation using rejection sampling.
+
+\
+\ \ Next, move on using rejection sampling to estimate $\sigma^{2}$.
+\
+\ \ Consider standard normal distribution as the known sampling distribution. 
+\
+\ \ Denote the pdf as $\phi(x)$; envelope function $e(x)=\dfrac{\phi(x)}{\alpha}$, and for the given constant $\alpha \leq 1$, make sure that for all x, we have  $e(x) \geq f(x)$
+\
+\ \ That is, $\dfrac{1}{\alpha} \geq \dfrac{f(x)}{\phi(x)}$, which is equivalent to find the maximum of $\dfrac{e^{-|x|^3/3}}{e^{-x^{2}/2}}=e^{x^{2}/2-|x|^{3}/3}$. Taking derivative W.R.T. x and setting the derivative equals 0, we could find the maximum is $exp\{\dfrac{1}{6}\} \approx 1.181$
+\
+\ \ Therefore, we choose $\dfrac{1}{\alpha}=1.182$, solve for $\alpha$, we have $\alpha \approx 0.846$
+
+```{r}
+#Problem 6.3 (b)
+#Step 1, construct e(x)
+
+e<-function(x){
+  alpha<-0.846
+  e_x<-phi(x)/alpha
+  return(e_x)
+}
+
+# Step 2, sample Y from standard normal distribution
+set.seed(354)
+Y_2<-rnorm(10000)
+
+# Step 3, draw sample U from unif(0,1).
+# Keep the samples that satisfy u<=Q(Y)/e(Y)
+set.seed(877)
+U<-runif(10000)
+U<-U[U<=Q(Y_2)/e(Y_2)]
+
+# Step 4, estimate using sample variance
+
+hat_sigmasquare_2<-sum((U-sum(U)/length(U))^2)/(length(U)-1)
+hat_sigmasquare_2
+
+
+```
+\
+\ \ Comments:
+\
+\ \ From the results of a and b, we could see that importance sampling and rejection sampling lead to significantly different outcome. The result of part b is problematic, which might due to the poor selection of the envelop function.
+
+
+
+(c) Philippe and Robert describe an alternative to importance-weighted averaging that employs a Riemann sum strategy with random nodes. When draws $X_{1},...,X_{n}$ originate from f, an estimator of $E\{h(X)\}$ is $\sum_{i=1}^{n-1}(X_{[i+1]}-X_{[i]})h(X_{[i]})f(X_{[i]})$ where $X_{[1]} \leq X_{[2]} \leq ... \leq X_{[n]}$ is the ordered sample associated with $X_{1},...,X_{n}$. This estimator has faster convergence than the simple Monte Carlo estimator. When f=cq, and the normalization constant c is not known, then $\dfrac{\sum_{i=1}^{n-1}(X_{[i+1]}-X_{[i]})h(X_{[i]})q(X_{[i]})}{\sum_{i=1}^{n-1}(X_{[i+1]}-X_{[i]})q(X_{[i]})}$ estimates $E\{h(X)\}$, noting that the denominator estimates $\dfrac{1}{c}$. Use this strategy to estimate $\sigma^{2}$, applying it post hoc to the output obtained in part (b).
+
+
+```{r}
+#Problem 6.3(c)
+
+# Step 1, construct function h(x), reverse_Q(x)=(3logx)^{1/3}
+
+h<-function(x){
+  x^2
+}
+
+
+reverse_Q<-function(x){
+  (-3*log(x))^(1/3)
+}
+
+set.seed(988)
+Uniform<-runif(10000)
+
+#Step 2, randomly draw samples from distribution which pdf is Q(x)
+
+X<-reverse_Q(Uniform)
+X<-sort(X)
+
+numerator<-c()
+denominator<-c()
+for (i in 1:length(X)-1){
+  numerator[i]<-(X[i+1]-X[i])*h(X[i])*Q(X[i])
+  denominator[i]<-(X[i+1]-X[i])*Q(X[i])
+}
+
+sum(numerator)/sum(denominator)
+
+
+
+```
+\
+\ \ Comments:
+\
+\ \ Compared with part (b), the results still show considerable differences. However, the outcome of part (c) is close to what we have derived from part (a).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

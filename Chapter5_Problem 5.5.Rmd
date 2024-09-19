@@ -1,0 +1,51 @@
+---
+title: "Chapter 5 Problem 5.5"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-11-09"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+# Problem 5.5
+\
+\ \ (a)Plot the weights versus the nodes.
+
+```{r}
+rm(list=ls())
+x<-c(-0.973906528517172,-0.865063366688985,-0.679409568299024,-0.433395394129247,-0.148874338981631,0.148874338981631,0.433395394129247,0.679409568299024,0.865063366688985,0.973906528517172)
+
+A<-c(0.066671344308688,0.149451394150581,0.219086362515982,0.269266719309996,0.295524224714753,0.295524224714753,0.269266719309996,0.219086362515982,0.149451394150581,0.066671344308688)
+
+#Plot
+plot(x,A,xlab="Nodes",ylab="Weights",type="o")
+```
+(b)
+\
+\ \ Integration:$\int_{-1}^{1}x^{2}dx=\dfrac{2}{3}$, therefore the area under the curve $y=x^{2}$ between $-1$ and $1$ is $\dfrac{2}{3}$.
+\
+\ \ Next, move on to calculate the estimated value of the integration with Gauss-Legendre quadrature(The Gaussian quadrature rule having $w(x)=1$ for integrals on $[-1,1]$)
+
+```{r}
+Estimate<-0
+for (i in 1:10){
+  Estimate<-Estimate+A[i]*(x[i])^2
+}
+Estimate
+```
+
+
+```{r}
+#Show the precision
+
+error<-(Estimate-2/3)
+error
+```
+\
+\ \ Comments:
+\
+\ \ The value estimated by Gauss-Legendre quadrature is very close to the true value. The error term is at $10^{-8}$ order of magnitude.
+
+
+

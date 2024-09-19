@@ -1,0 +1,241 @@
+---
+title: "Chapter 4 Problem 4.2a+b"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-10-30"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+(a)
+
+First, the likelihood function of Y:
+\
+\ \ $L(\theta|Y)=z_{0}(\theta)^{n_{z,0}}\prod_{i=0}^{16}t_{i}(\theta)^{n_{t,i}}\prod_{i=0}^{16}p_{i}(\theta)^{n_{p,i}}$, for $i=0,1,...,16$
+
+\
+\ \ Take log:
+\
+\ \ $log \{L(\theta | Y)\}=n_{z,0}log\{z_{0}(\theta)\}+\sum_{i=0}^{16}n_{t,i}log\{t_{i}(\theta)\}+\sum_{i=0}^{16}n_{p,i}log\{p_{i}(\theta)\}$
+
+\
+\ \ Plug in $z_{0}(\theta)=\dfrac{\alpha}{\pi_{0}(\theta)},t_{i}(\theta)=\dfrac{\beta\mu^{i}e^{-\mu}}{\pi_{i}(\theta)},p_{i}(\theta)=\dfrac{(1-\alpha-\beta)\lambda^{i}e^{-\lambda}}{\pi_{i}(\theta)}$, we have:
+\
+\ \ $log \{L(\theta | Y)\}=n_{z,0}(log\alpha-log\{\pi_{0}(\theta)\}+\sum_{i=0}^{16}n_{t,i}(log\beta+ilog\mu-\mu-log\{\pi_{i}(\theta)\})+\sum_{i=0}^{16}n_{p,i}(log\{1-\alpha-\beta\}+ilog\lambda-\lambda-log\{\pi_{i}(\theta)\})$
+\
+\ \ $=n_{z,0}log\alpha+(\sum_{i=0}^{16}n_{t,i})log\beta+(\sum_{i=0}^{16}in_{t,i})log\mu-(\sum_{i=0}^{16}n_{t,i})\mu+(\sum_{i=0}^{16}n_{p,i})log\{1-\alpha-\beta\}+(\sum_{i=0}^{16}in_{p,i})\log\lambda-(\sum_{i=0}^{16}n_{p,i})\lambda-\sum_{i=0}^{16}n_{i}log\{\pi_{i}(\theta)\}$
+
+\
+\ \ In addition, we find that(for $i=0,1,...,16;k=t,p$):
+\
+\ \ $E\{n_{z,0}|x,\theta^{(t)}\}=n_{0}z_{0}(\theta^{(t)})=n_{z,0}^{(t)}$
+\
+\ \ $E\{n_{k,i}|x,\theta^{(t)}\}=n_{i}k_{i}(\theta^{(t)})=n_{k,i}^{(t)}$
+\
+\ \ $E\{n_{i}log \pi_{i}(\theta)|x,\theta^{(t)}\}=n_{i}log\pi_{i}(\theta^{(t)})$
+
+\
+\ \ Therefore, for the E-Step, we have:
+\
+\ \ $Q(\theta|\theta^{(t)})=E\{logL(\theta|Y)|x,\theta^{(t)}\}=n_{z,0}^{(t)}log\alpha+(\sum_{i=0}^{16}n_{t,i}^{(t)})log\beta+(\sum_{i=0}^{16}in_{t,i}^{(t)})log\mu-(\sum_{i=0}^{16}n_{t,i}^{(t)})\mu+(\sum_{i=0}^{16}n_{p,i}^{(t)})log\{1-\alpha-\beta\}+(\sum_{i=0}^{16}in_{p,i}^{(t)})\log\lambda-(\sum_{i=0}^{16}n_{p,i}^{(t)})\lambda-\sum_{i=0}^{16}n_{i}log\{\pi_{i}(\theta)^{(t)}\}$
+
+\
+\ \ For the M-Step:
+\
+\ \ Differentiating $Q(\theta|\theta^{(t)})$ w.r.t. $\alpha$,$\beta$,$\mu$,$\lambda$ and setting as 0, respectively:
+\
+\ \ $\dfrac{\partial Q(\theta|\theta^{(t)})}{\partial \alpha}=\dfrac{n_{z,0}^{(t)}}{\alpha^{(t+1)}}-\dfrac{\sum_{i=0}^{16}n_{p,i}^{(t)}}{1-\alpha^{(t+1)}-\beta^{(t+1)}}=0$
+\
+\ \ $\dfrac{\partial Q(\theta|\theta^{(t)})}{\partial \beta}=\dfrac{\sum_{i=0}^{16}n_{t,i}^{(t)}}{\beta^{(t+1)}}-\dfrac{\sum_{i=0}^{16}n_{p,i}^{(t)}}{1-\alpha^{(t+1)}-\beta^{(t+1)}}=0$
+\
+\ \ $\dfrac{\partial Q(\theta|\theta^{(t)})}{\partial \mu}=\dfrac{\sum_{i=0}^{16}in_{t,i}^{(t)}}{\mu^{(t+1)}}-\sum_{i=0}^{16}n_{t,i}^{(t)}=0$
+\
+\ \ $\dfrac{\partial Q(\theta|\theta^{(t)})}{\partial \lambda}=\dfrac{\sum_{i=0}^{16}in_{p,i}^{(t)}}{\lambda^{(t+1)}}-\sum_{i=0}^{16}n_{p,i}^{(t)}=0$
+\
+\ \ Solve the equations above, we get:
+\
+\ \ $\alpha^{(t+1)}=\dfrac{n_{0}z_{0}(\theta^{(t)})}{N}$
+\
+\ \ $\beta^{(t+1)}=\sum_{i=0}^{16}\dfrac{n_{i}t_{i}(\theta^{(t)})}{N}$
+\
+\ \ $\mu^{(t+1)}=\dfrac{\sum_{i=0}^{16}in_{i}t_{i}(\theta^{(t)})}{\sum_{i=0}^{16}n_{i}t_{i}(\theta^{(t)})}$
+\
+\ \ $\lambda^{(t+1)}=\dfrac{\sum_{i=0}^{16}in_{i}p_{i}(\theta^{(t)})}{\sum_{i=0}^{16}n_{i}p_{i}(\theta^{(t)})}$
+\
+\ \ Q.E.D.
+
+
+(b)
+
+```{r}
+#Apply EM algorithm to solve
+
+rm(list=ls())
+x<-c(379,299,222,145,109,95,73,59,45,30,24,12,4,2,0,1,1)
+theta<-c(0.1,0.1,5,0.6)
+
+#Define the function pi_i(theta)
+pi_theta<-function(theta,k){
+  pith<-theta[1]*(k<1) + theta[2]*theta[3]^k*exp(-theta[3]) + (1-theta[1]-theta[2])*theta[4]^k*exp(-theta[4])
+  return (pith)
+}
+
+#Define the function z, t, p
+z_theta<-function(theta){
+  z0<-theta[1]/pi_theta(theta,0)
+  return (z0)
+}
+
+ti_theta<-function(theta,k){
+  ti<-theta[2]*theta[3]^k*exp(-theta[3])/pi_theta(theta,k)
+  return (ti)
+}
+
+pp_theta<-function(theta,k){
+  pi<-((1-theta[1]-theta[2])*theta[4]^k*exp(-theta[4]))/pi_theta(theta,k)
+  return (pi)
+}
+
+#Define the iteration function
+EM<-function(theta,x){
+  theta_0<-theta
+  prt<-c(0:16)
+  theta<-c(0,0,0,0)
+  y<-rep(0,17)
+  z<-rep(0,17)
+  for (k in 1:17){
+    y[k]<-x[k]*ti_theta(theta_0,k-1)
+  }
+    for (k in 1:17){
+    z[k]<-x[k]*pp_theta(theta_0,k-1)
+    }
+  theta[1]<-x[1]*z_theta(theta_0)/sum(x)
+  for (k in 1:17){
+  theta[2]<-theta[2]+x[k]*ti_theta(theta_0,k-1)/sum(x)
+  theta[3]<-theta[3]+prt[k]*x[k]*ti_theta(theta_0,k-1)/sum(y)
+  theta[4]<-theta[4]+prt[k]*x[k]*pp_theta(theta_0,k-1)/sum(z)}
+  return (theta)
+}
+
+#Define the maximal iterations
+iter<-1000
+current_iter<-1
+R<-0
+
+#Iterate
+while (current_iter < iter){
+  current_iter<-current_iter+1
+  thetaprocess<-theta
+  theta<-EM(theta,x)
+  R<-sum((thetaprocess-theta)^2)/sum(thetaprocess^2)
+  if (R < 0.000000001) break
+}
+
+current_iter
+
+```
+
+```{r}
+R
+
+```
+
+```{r}
+theta
+
+```
+\
+\ \ Conclusion:
+\
+\ \ The parameter estimated using the EM algorithm is $\hat{\theta}=(\hat{\alpha},\hat{\beta},\hat{\mu},\hat{\lambda})=(0.1219678,0.3154921,5.9373457,1.4662323)$
+
+
+(b) Apply Aitken Acceleration to solve 4.2 
+```{r}
+#Apply Aitken Acceleration
+# Initialize parameters
+alpha <- 0.1
+beta <- 0.1
+mu <- 5.0
+lambda <- 0.6
+theta <- c(alpha, beta, mu, lambda)
+
+# Observed data
+n <- c(379, 299, 222, 145, 109, 95, 73, 59, 45, 30, 24, 12, 4, 2, 0, 1, 1)
+
+# E-step
+e_step <- function(theta, n) {
+  alpha <- theta[1]
+  beta <- theta[2]
+  mu <- theta[3]
+  lambda <- theta[4]
+  
+  pi_theta <- function(i) {
+    alpha * (i == 0) + beta * mu^i * exp(-mu) / factorial(i) + (1 - alpha - beta) * lambda^i * exp(-lambda) / factorial(i)
+  }
+  
+  z <- alpha * (0 == 0) / pi_theta(0)
+  t <- sapply(0:16, function(i) beta * mu^i * exp(-mu) / (factorial(i) * pi_theta(i)))
+  p <- sapply(0:16, function(i) (1 - alpha - beta) * lambda^i * exp(-lambda) / (factorial(i) * pi_theta(i)))
+  
+  return(list(z = z, t = t, p = p))
+}
+
+# M-step
+aitken <- function(x) {
+  n <- length(x)
+  if (n < 3) {
+    return(x[n])
+  } else {
+    return(x[n] - ((x[n] - x[n - 1])^2 / (x[n - 2] - 2 * x[n - 1] + x[n])))
+  }
+}
+
+
+# M-step
+m_step <- function(theta, n, e_step_values) {
+  z <- e_step_values$z
+  t <- e_step_values$t
+  p <- e_step_values$p
+  
+  alpha_new <- aitken(c(theta[1], sum(n[1] * z) / sum(n)))
+  beta_new <- aitken(c(theta[2], sum(n * t) / sum(n)))
+  mu_new <- aitken(c(theta[3], sum(0:16 * n * t) / sum(n * t)))
+  lambda_new <- aitken(c(theta[4], sum(0:16 * n * p) / sum(n * p)))
+  
+  return(c(alpha_new, beta_new, mu_new, lambda_new))
+}
+
+# EM algorithm
+max_iterations <- 10000  # adjust as needed
+epsilon <- 1e-6  # convergence threshold
+
+for (iteration in 1:max_iterations) {
+  # E-step
+  e_step_values <- e_step(theta, n)
+  
+  # M-step
+  theta_new <- m_step(theta, n, e_step_values)
+  
+  # Check for convergence
+  if (max(abs(theta_new - theta)) < epsilon) {
+    break
+  }
+  
+  # Update parameters
+  theta <- theta_new
+}
+
+print(theta)
+
+
+```
+
+
+
+
+
+
+

@@ -1,0 +1,111 @@
+---
+title: "Chapter 5 Problem 5.4"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-11-09"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+# Problem 5.4 
+\
+\ \ Let X ~ Unif[1,a] and Y=(a-1)/X, for a>1. Compute E\{Y\} = log\{a\} using
+Romberg’s algorithm for m=6. Table the resulting triangular array. Comment on your results.
+
+```{r}
+#First define the Romberg Integration Function 
+
+rm(list=ls())
+T_hat<-function(c,b,f,n){
+  T_new<-0.5*(f(c)+f(b))
+  for (s in 1:n){
+    h<- (b-c)/n
+    l<-0
+    for (j in 1:n){
+      l<-l+f(c+(j-1/2)*h)
+    }
+    T_new<-T_new/2 + h/2 * l
+  }
+  return (T_new)
+}
+
+# The definition below allow input parameter n, and actually calculates T(2^n)
+# Define the output of the resulting triangular array
+
+triangular<-function(c,b,f,m){
+  triangular_result=matrix(0,nrow=m+1,ncol=m+1)
+  triangular_result[1,1]<-T_hat(c,b,f,0)
+  for (i in 2:(m+1)){
+      triangular_result[i,1]<-T_hat(c,b,f,i)
+    for (j in 2:i){
+      triangular_result[i,j]<-(4^j*triangular_result[i,j-1]-triangular_result[i-1,j-1])/(4^j - 1)
+    }
+  }
+  return(triangular_result)
+}
+
+# Plug in the parameter of this problem
+
+# Define the solution function for different starting value a
+
+solution_a<-function(a){
+  f<-function(x){
+    y<-(a-1)/x
+    return (y)
+  }
+  c<-1
+  b<-a
+  m<-6
+  EY_hat=triangular(c,b,f,m)
+  EY_hat
+}
+
+#Calculate a=2,observe both true value and the estimated triangular array
+
+log(2)
+
+```
+
+
+
+```{r}
+solution_a(2)
+```
+```{r}
+log(3)
+
+```
+
+
+```{r}
+
+solution_a(3)
+
+```
+
+```{r}
+
+log(2.5)
+
+```
+
+
+
+```{r}
+
+solution_a(2.5)
+
+```
+\
+\ \ Comments:
+\
+\ \ When a=2, the result calculated by Romberg Integration is close to the true value;
+\
+\ \ When $a \neq 2$, the result calculated by Romberg Integration does not seem to be very precise.
+
+
+
+
+

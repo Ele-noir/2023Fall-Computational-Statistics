@@ -1,0 +1,84 @@
+---
+title: "Chapter 6 Problem 6.8"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-11-09"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+Consider the model given by $X \sim Lognormal(0,1)$ and $log Y= 9+3logX+\epsilon$, where $\epsilon \sim N(0,1)$. We wish to estimate $E\{Y/X\}$. Compare the performance of the standard Monte Carlo estimator and Rao-Blackwellized estimator.
+
+
+```{r}
+#Problem 6.8
+
+num<-10000
+set.seed(201)
+X<-rlnorm(num,meanlog=0,sdlog=1)
+epsilon<-rnorm(num,mean=0,sd=1)
+Y<-exp(1)^(9+3*log(X)+epsilon)
+
+h_x_SMA<-Y/X
+
+# Standard Monte Carlo estimator
+
+E_SMA<-sum(h_x_SMA)/length(h_x_SMA)
+
+
+E_SMA
+
+```
+\
+\ \ Next, perform the Rao-Blackwellization of the estimation $\hat{\mu_{RB}}=\dfrac{1}{n}\sum_{i=1}^{n}E\{h(X_{i1})|X_{i2}\}$.
+\
+\ \ In this scenario, we can obtain $X_{i}=(X_{i1},X_{i2})$, where $X_{i2}=log(X_{i1})$;
+\
+\ \ 
+\begin{equation} \label{eq1}
+\begin{split}
+h(X_{i1}|X_{i2}) & = E\{Y/X|logX\} \\
+ & = E\{exp\{log(Y/X)\}|logX\} \\
+ & = E\{exp\{logY-logX\}|logX\} \\
+ & = E\{exp\{9+2logX+\epsilon\}|logX\} \\
+ & = exp(9.5+2logX)
+\end{split}
+\end{equation}
+```{r}
+# Rao-Blackwellized Estimator
+
+X_i2<-log(X)
+
+h_x_RB<-exp(9.5+2*X_i2)
+
+E_RB<-sum(h_x_RB)/length(h_x_RB)
+
+E_RB
+
+```
+\
+\ \ Finally, let's solve the true value of $E\{Y/X\}$
+\
+\ \ 
+\begin{equation} \label{eq2}
+\begin{split}
+E\{Y/X\} & = E\{exp\{log(Y/X)\} \\
+ & = E\{exp\{logY-logX\}\} \\
+ & = E\{exp\{9+2logX+\epsilon \}\} \\
+ & = E\{exp\{11.5\}\} \\
+ & = exp(11.5)
+\end{split}
+\end{equation}
+
+```{r}
+# True Value
+
+exp(11.5)
+
+```
+\
+\ \ Comparison:
+\
+\ \ From the above, we could see that Rao-Blackwellized estimator is closer to the true value compared with the standard Monte Carlo estimator.
+

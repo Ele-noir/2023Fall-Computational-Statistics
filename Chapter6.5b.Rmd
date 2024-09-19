@@ -1,0 +1,50 @@
+---
+title: "Chapter 6 Problem 6.5b"
+author: "Lizhuo ZHOU 20307100132"
+date: "2023-11-20"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+# Problem 6.5 b
+
+(b)
+\
+\ \ Consider $e\hat{\mu_1}+(1-e)\hat{\mu_2}$,
+\
+\ \ 
+\begin{equation} \label{eq1}
+\begin{split}
+Var\{e\hat{\mu_1}+(1-e)\hat{\mu_2}\} & = e^2Var(\hat{\mu_1})+(1-e)^2Var(\hat{\mu_2})+2e(1-e)Cov(\hat{\mu_1},\hat{\mu_2}) \\
+ & = e^2\sigma^{2}_{1}+(1-e)^{2}\sigma^{2}_{2}+2e(1-e)\sigma_{1}\sigma_{2}\rho \\
+ & = (\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho)e^{2}+(2\sigma_{1}\sigma_{2}\rho-2\sigma^{2}_{2})e+\sigma_{2}^{2}
+\end{split}
+\end{equation}
+\
+\ \ As $\rho<0$, $\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho>0$.
+\
+\ \ Therefore $Var\{e\hat{\mu_1}+(1-e)\hat{\mu_2}\}$ could reach its minimum at $e_{0}=\dfrac{\sigma^{2}_{2}-\sigma_{1}\sigma_{2}\rho}{\sigma^{2}_{1}+\sigma_{2}^{2}-2\sigma_{1}\sigma_{2}\rho}$
+\
+\ \ Also, $e\hat{\mu_{1}}+(1-e)\hat{\mu_2}$ is the unbiased estimator of $\mu$.
+\
+\ \ Let $\hat{\mu_{CV}}=\hat{\mu_{1}}+\lambda Z=e_{0}\hat{\mu_1}+(1-e_{0})\hat{\mu_{2}}$
+\
+\ \ If we take $Z=\hat{\mu_2}-\hat{\mu_{1}}$, then $\lambda=1-e_{0}=\dfrac{\sigma^{2}_{1}-\sigma_{1}\sigma_{2}\rho}{\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho}$
+\
+\ \ 
+\begin{equation} \label{eq2}
+\begin{split}
+Var\{\hat{\mu_{CV}}\} & = \dfrac{(\sigma^{2}_{2}-\sigma_{1}\sigma_{2}\rho)^{2}}{\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho}-\dfrac{2(\sigma^{2}_{2}-\sigma_{1}\sigma_{2}\rho)^{2}}{\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma
+_{1}\sigma_{2}\rho}+\sigma^{2}_{2} \\
+ & = \dfrac{\sigma^{2}_{2}(\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho)-(\sigma^{2}_{2}-\sigma_{1}\sigma_{2}\rho)^{2}}{\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho} \\
+ & = \dfrac{\sigma^{2}_{1}\sigma^{2}_{2}(1-\rho^{2})}{\sigma^{2}_{1}+\sigma^{2}_{2}-2\sigma_{1}\sigma_{2}\rho}
+\end{split}
+\end{equation}
+
+
+
+
+
