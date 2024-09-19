@@ -1,0 +1,207 @@
+---
+title: 'Chapter 2 Problem 2.1 '
+author: "Lizhuo Zhou 20307100132"
+date: '2023-10-04'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\large
+
+## Problem 2.1 a,c,d
+
+
+```{r} 
+X <- c(1.77,-0.23,2.76,3.80,3.47,56.75,-1.34,4.24,-2.44,3.29,3.71,-2.40,4.53,
+    -0.07,-1.05,-13.87,-2.53,-1.75,0.27,43.21)
+
+#Log-likelihood Function  
+log_like_f<-function(theta){
+  like=1
+  for (i in 1:length(X)){
+    like=like*pi^(-1)*((X[i]-theta)^2+1)^(-1)
+  }
+  log_like=log(like)
+  
+  return(log_like)
+}
+
+#Part a:Graph the log-likelihood function
+
+curve(log_like_f,from=-4,to=4,main='Log-likelihood Function')
+
+```
+```{r}
+#Part a:Find the MLE for theta using the Newton-Raphson method
+#First-order derivative
+
+FOD_like<-function(theta){
+  FOD_like=0
+  for (i in 1:length(X)){
+    i<-X[i]
+    #log_like_xi<-expression(log(((pi)^(-1))*(((i-theta)^2+1)^(-1))))
+    #FOD<-D(log_like_xi,'theta')
+    FOD_like=FOD_like-(((pi)^(-1)) * (((i - theta)^2 + 1)^((-1) - 1) * ((-1) * (2 * 
+ (i- theta))))/(((pi)^(-1)) * (((i - theta)^2 + 1)^(-1))))
+  }
+  return(FOD_like)
+}
+
+#Second-order derivative
+
+SOD_like<-function(theta){
+  SOD_like=0
+  for (i in 1:length(X)){
+    i<-X[i]
+    SOD_like<-SOD_like-((pi)^(-1)) * (((i - theta)^2 + 1)^((-1) - 1) * ((-1) * 2) + 
+                                ((i - theta)^2 + 1)^(((-1) - 1) - 1) * (((-1) - 1) * (2 * 
+                                                                                        (i - theta))) * ((-1) * (2 * (i - theta))))/(((pi)^(-1)) * 
+                                                                                                                                       (((i - theta)^2 + 1)^(-1))) - ((pi)^(-1)) * (((i - theta)^2 + 
+                                                                                                                                                                                       1)^((-1) - 1) * ((-1) * (2 * (i - theta)))) * (((pi)^(-1)) * 
+                                                                                                                                                                                                                                        (((i - theta)^2 + 1)^((-1) - 1) * ((-1) * (2 * (i - theta)))))/(((pi)^(-1)) * 
+                                                                                                                                                                                                                                                                                                          (((i - theta)^2 + 1)^(-1)))^2  }
+  return(SOD_like)
+  
+}
+
+#Newton-Raphson Method
+
+# Function to implement NEWTON'S method
+
+Newton <- function(f, df, startpoint, eps=1e-08, maxiter=1000) {
+  x <- startpoint
+  t <- 0
+  repeat {
+    t <- t + 1
+    x.new <- x - f(x) / df(x)
+    if(abs(x.new - x) < eps | t >= maxiter) {
+      if(t >= maxiter) warning("Maximum number of iterations reached!")
+      break
+    }
+    x <- x.new
+  }
+  out <- list(solution=x.new, value=f(x.new), iter=t)
+  return(out)
+}
+
+
+Newton(FOD_like,SOD_like,-11)
+Newton(FOD_like,SOD_like,-1)
+Newton(FOD_like,SOD_like,0)
+Newton(FOD_like,SOD_like,1.5)
+Newton(FOD_like,SOD_like,4)
+Newton(FOD_like,SOD_like,4.7)
+Newton(FOD_like,SOD_like,7)
+Newton(FOD_like,SOD_like,8)
+Newton(FOD_like,SOD_like,38)
+mean(X)
+Newton(FOD_like,SOD_like,mean(X))
+```
+\
+\ \ Conclusion:
+\
+\ \ We could see that different starting points will result in distinct MLE for $\theta$, and there are two optimum points within the range $(-1,4)$. The mean of the data, 
+5.106, is not an entirely good starting point because it converges to a local optimum instead of a global maximum.
+
+
+```{r}
+#Part c-Apply fixed-point iterations
+
+# Function to implement Fixed-point method
+
+Fixed_point<-function(f,startpoint,alpha,eps=1e-08,maxiter=3000){
+  x <- startpoint
+  t <- 0
+  repeat {
+    t <- t + 1
+    x.new <- alpha*FOD_like(x)+x
+    if(abs(x.new - x) < eps | t >= maxiter) {
+      if(t >= maxiter) warning("Maximum number of iterations reached!")
+      break
+    }
+    x <- x.new
+  }
+  out <- list(solution=x.new, value=f(x.new), iter=t)
+  return(out)
+}
+
+Fixed_point(FOD_like,-1,1)
+Fixed_point(FOD_like,-1,0.64)
+Fixed_point(FOD_like,-1,0.25)
+#Investigate other choices: Starting values
+Fixed_point(FOD_like,0.5,1)
+Fixed_point(FOD_like,1,1)
+Fixed_point(FOD_like,2,1)
+Fixed_point(FOD_like,0.5,0.64)
+Fixed_point(FOD_like,1,0.64)
+Fixed_point(FOD_like,2,0.64)
+Fixed_point(FOD_like,0.5,0.25)
+Fixed_point(FOD_like,1,0.25)
+Fixed_point(FOD_like,2,0.25)
+#Investigate other choices: Scaling factors
+Fixed_point(FOD_like,-1,0.75)
+Fixed_point(FOD_like,-1,0.5)
+Fixed_point(FOD_like,-1,0.33)
+Fixed_point(FOD_like,1,0.75)
+Fixed_point(FOD_like,1,0.5)
+Fixed_point(FOD_like,1,0.33)
+
+```
+\
+\ \ Conclusion:
+\
+\ \ I. Different choices of starting points affect the final optimum point found;
+\
+\ \ II. Obviously, the magnitude of scaling factors significantly influence the number of iterations. It seems that with starting point unchanged, as the scaling factor goes to near 0, the number of iterations required decreases enormously. 
+\
+\ \ III. Also, certain combinations of starting points and scaling factors will converge to quite dubious points.
+
+
+
+```{r}
+#Part d-Apply the secant method
+
+# Function to implement the SECANT method
+
+secant <- function(f, x0, x1, eps=1e-08, maxiter=1000) {
+  x.old <- x0
+  x <- x1
+  t <- 0
+  repeat {
+    t <- t + 1
+    diff.ratio <- (f(x) - f(x.old)) / (x - x.old)
+    x.new <- x - f(x) / diff.ratio
+    if(abs(x.new - x) < eps | t >= maxiter) {
+      if(t >= maxiter) warning("Maximum number of iterations reached!")
+      break
+    }
+    x.old <- x
+    x <- x.new
+  }
+  out <- list(solution=x.new, value=f(x.new), iter=t)
+  return(out)
+  
+}
+
+
+secant(FOD_like,-2,-1)
+
+secant(FOD_like,-3,3)
+
+secant(FOD_like,-2.5,0.5)
+
+secant(FOD_like,-6,-1)
+
+secant(FOD_like,0,0.3)
+```
+\
+\ \ Conclusion:
+\
+\ \ Different choices of starting points lead to different optimum points found, all of which are around the zero points of the first-order derivative. A characteristic of secant method is that it requires only a few iterations.
+

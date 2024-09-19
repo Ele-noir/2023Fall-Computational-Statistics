@@ -1,0 +1,350 @@
+---
+title: "Chapter 2 Problem 2.5 "
+author: Lizhuo Zhou 20307100132
+output: pdf_document
+date: '2023-10-04'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\large
+
+## Problem 2.5 a,b,c,d,e,f
+
+\
+\ \ Consider a model $Y_{i} \sim^{ind} Pois(\lambda_{i})$,where $\lambda_{i}=x_{i}^{T}\alpha$,$x_{i}$ is a column vector of known covariates, and $\alpha$ is a vector parameter of interest.The log-likelihood function(up to additive constants) is
+\
+\ \ $l(\alpha)=-\left(\sum_{i=1}^{n}x_{i}^{T}\right)\alpha+\sum_{i=1}^{n}Y_{i}log(x_{i}^{T}\alpha)$
+\
+\ \ Data $\{(x_{i},Y_{i}),i=1,2,...,n\}$ are given by the dataset.
+
+```{r}
+library('MASS')
+df=read.table('oilspills.dat')
+Y <- as.numeric(df[2:27,2])
+n <- length(Y)
+x1 <- as.numeric(df[2:27,3])
+x2 <- as.numeric(df[2:27,4])
+x <- matrix(c(x1, x2), nrow=n, ncol=2, byrow=FALSE)
+
+loglike <- function(a) {
+p <- as.numeric(x %*% a)
+if(any(p <= 0)) out <- -Inf else out <- -sum(p) + sum(Y * log(p))
+return(out)
+}
+
+```
+
+
+
+### Part (a)
+
+\
+\ \ To get the Newton-Raphson update, we should derive the first-order and second-order derivatives of $l(\alpha)$.
+\
+\ \ The first derivative vector is $\displaystyle l^{\prime}(\alpha)=\sum_{i=1}^{n}\left(\dfrac{Y_{i}}{x_{i}^{T}\alpha}-1\right)x_{i}$
+\
+\ \ and the second derivative matrix is
+\
+\ \ $\displaystyle l^{\prime\prime}(\alpha)=-\sum_{i=1}^{n}\dfrac{Y_{i}}{(x_{i}^{T}\alpha)^{2}}x_{i}x_{i}^{T}$
+\
+\ \ Then, for a given starting value $\alpha^{(0)}$, Newton-Raphson updating equation:
+\
+\ \ $\alpha^{(t+1)}=\alpha^{(t)}-[l^{\prime\prime}(\alpha^{(t)})]^{-1}l^{\prime}(\alpha^{(t)}),t \geq 0$
+
+### Part(b)
+\
+\ \ For Fisher scoring, we replace the second derivative matrix with the negative Fisher information matrix:
+\
+\ \ $\displaystyle -I(\alpha)=E\{l^{\prime\prime}(\alpha)\}=-\sum_{i=1}^{n}\dfrac{E(Y_{i})}{(x_{i}^{T}\alpha)^{2}}x_{i}x_{i}^{T}=-\sum_{i=1}^{n}\dfrac{1}{x_{i}^{T}\alpha}x_{i}x_{i}^{T}$
+\
+\ \ Then, for a given starting value $\alpha^{(0)}$, the Fisher scoring updating equation:
+\
+\ \ $\alpha^{(t+1)}=\alpha^{(t)}-[-I(\alpha^{(t)})]^{-1}l^{\prime}(\alpha^{(t)}),t \geq 0$
+
+
+### Part(c)
+
+```{r}
+oil.newton <- function(a, cov=FALSE, eps=1e-08, maxiter=100) {
+  t <- 0
+  A <- matrix(a, nrow=2)
+  repeat {
+    t <- t + 1
+    d <- as.numeric(x %*% a)
+    g <- t(x) %*% (Y / d - 1)
+    gg <- matrix(0, 2, 2)
+    gg[1, 1] <- -sum(Y * x1**2 / d**2)
+    gg[1, 2] <- gg[2, 1] <- -sum(Y * x1 * x2 / d**2)
+    gg[2, 2] <- -sum(Y * x2**2 / d**2)
+    ggi <- ginv(gg)
+    a.new <- a - ggi %*% g
+    A <- cbind(A, a.new)
+    if(mean(abs(a.new - a)) < eps || t >= maxiter) break
+    a <- a.new
+    }
+    if(cov) cov <- -ggi else cov=NULL
+    return(list(iter=t, est=t(A), cov=cov))
+}
+
+oil.scoring <- function(a, cov=FALSE, eps=1e-08, maxiter=100) {
+  t <- 0
+  A <- matrix(a, nrow=2)
+  repeat {
+    t <- t + 1
+    d <- as.numeric(x %*% a)
+    g <- t(x) %*% (Y / d - 1)
+    fi <- matrix(0, 2, 2)
+    fi[1, 1] <- -sum(x1**2 / d)
+    fi[1, 2] <- fi[2, 1] <- -sum(x1 * x2 / d)
+    fi[2, 2] <- -sum(x2**2 / d)
+    fii <- solve(fi)
+    a.new <- a - fii %*% g
+    A <- cbind(A, a.new)
+    if(mean(abs(a.new - a)) < eps || t >= maxiter) break
+    a <- a.new
+    }
+    if(cov) cov <- -fii else cov=NULL
+    return(list(iter=t, est=t(A), cov=cov))
+  }
+```
+
+```{r}
+o.newton <- oil.newton(c(0.4, 0.6), cov=TRUE)
+o.newton_2 <- oil.newton(c(0.5, 0.5), cov=TRUE)
+o.newton_3 <- oil.newton(c(0.65, 0.35), cov=TRUE)
+o.newton_4 <- oil.newton(c(1, 2), cov=TRUE)
+o.newton_5 <- oil.newton(c(8, 9), cov=TRUE)
+o.score <- oil.scoring(c(0.4, 0.6), cov=TRUE)
+o.score_2 <- oil.scoring(c(0.5, 0.5), cov=TRUE)
+o.score_3 <- oil.scoring(c(0.65, 0.35), cov=TRUE)
+o.score_4 <- oil.scoring(c(1, 2), cov=TRUE)
+o.score_5 <- oil.scoring(c(8, 9), cov=TRUE)
+
+o.newton
+o.score
+o.newton_2
+o.score_2
+o.newton_3
+o.score_3
+o.newton_4
+o.score_4
+o.newton_5
+o.score_5
+```
+\
+\ \ Conclusion:
+\
+\ \ Based on the experiments of several randomly selected pairs of starting points, it seems that Newton's method is more sensitive to the choice of starting value $\alpha^{(0)}$ in comparison with Fisher scoring, that is, if the starting values fluctuate in the nearby neighborhood, the final result could be very different, however under the same circumstances Fisher scoring may still give the same result.
+\
+\ \ When the starting points are preferable, the Newton's method converges much more quickly. For instance, with $\alpha^{(0)}=(0.5,0.5)^{T}$, both Newton and Fisher scoring converge to the MLE $\hat{\alpha}=(1.0972,0.9376)^{T}$ in 6 and 16 iterations, respectively.
+
+ 
+### Part(d)
+\
+\ \ Both Newton and Fisher scoring can produce output that can be used to estimate the standard error (and correlation) of the MLEs, in particular,$[-l^{\prime\prime}(\hat{\theta})]^{-1}$ and $I(\hat{\alpha})^{-1}$, respectively. The following results were obtained by the experiments(setting the start points $\alpha^{(0)}=(0.5,0.5)^{T}$) :
+```{r}
+
+
+Newton_SD_1<-(0.1517982)^{0.5}
+Newton_SD_2<-(0.3076655)^{0.5}
+Fisher_SD_1<-(0.1914552)^{0.5}
+Fisher_SD_2<-(0.3987527)^{0.5}
+
+Newton_SD_1
+Newton_SD_2
+Fisher_SD_1
+Fisher_SD_2
+
+
+```
+\
+\ \ Adopt the Newton-Raphson method, the standard errors we estimated is $(0.3896129,0.554676)$.
+\
+\ \ Adopt the Fisher scoring method, the standard erros we estimated is $(0.4375559, 0.6314687)$.
+
+### Part(e)
+
+```{r}
+# The method of steepest ascent
+oil.steep <- function(a, eps=1e-08, maxiter=100) {
+  t <- 0
+  ll.a <- loglike(a)
+  A <- matrix(a, nrow=2)
+  repeat {
+    b <- 1
+    t <- t + 1
+    d <- as.numeric(x %*% a)
+    g <- t(x) %*% (Y / d - 1)
+    ascent <- FALSE
+    while(!ascent) {
+      a.new <- a + b * g
+      ll.new <- loglike(a.new)
+      if(ll.new < ll.a) b <- b / 2 else ascent <- TRUE
+      }
+    A <- cbind(A, a.new)
+    if(mean(abs(a.new - a)) < eps || t >= maxiter) break
+    a <- a.new
+    ll.a <- ll.new
+    }
+  return(list(iter=t, est=t(A)))
+}
+
+o.steep <- oil.steep(c(0.5, 0.5))
+
+
+o.steep
+```
+\
+\ \ Conclusion:
+\
+\ \ The method of steepest ascent is very similar to Newton’s method but, instead of $l^{\prime\prime}$ , it
+uses the (scaled) negative identity matrix. Thus, the updating equation looks like:
+
+$\alpha^{(t+1)}=\alpha^{t}+c^{(t)}l^{\prime}(\alpha^{(t)}), t \geq 0$
+\
+\ \ Note that,the number $c^{(t)}$ is chosen to make sure that the update moves uphill on
+the likelihood surface. Starting from $\alpha^{(0)}=(0.5,0.5)^{T}$ , the method of steepest
+ascent finds the MLE $\hat{\alpha}=(1.0972,0.9376)^{T}$ , the same as the other methods.
+Nonetheless, this method took 63 iterations to reach the MLE, much more than
+the others.
+
+### Part(f)
+
+```{r}
+# Apply Quasi-Newton Optimization
+#f <- function(a) -loglike(a)
+#optim(c(0.5, 0.5), f, method="BFGS")
+df=read.table('oilspills.dat')
+Y <- as.numeric(df[2:27,2])
+n <- length(Y)
+x1 <- as.numeric(df[2:27,3])
+x2 <- as.numeric(df[2:27,4])
+x <- matrix(c(x1, x2), nrow=n, ncol=2, byrow=FALSE)
+
+
+# Apply Quasi-Newton Optimization
+#Initial Values
+
+M = diag(-1,2,2)
+itr = 40
+epsilon = 1e-10
+a.values = matrix(0,itr+1,2)
+alpha.default = 1
+alpha = alpha.default
+
+g.prime <- function(a){t(x) %*% ((Y/as.numeric(x %*% a)) - 1)}
+
+a = c(0.5,0.5)
+a.values[1,] = a
+for(i in 1:itr){
+  hessian.inv = solve(M)
+  at = a - alpha*hessian.inv%*%g.prime(a)
+  # REDUCE ALPHA UNTIL A CORRECT STEP IS REACHED
+  while(loglike(at) < loglike(a)){
+    alpha = alpha/2
+    #WITH STEP-HALVING
+		at = a - alpha*hessian.inv%*%g.prime(a)
+		}
+    a.values[i+1,] = at
+    z = at-a
+    y = g.prime(at)-g.prime(a)
+    v = y-M%*%z
+    M.old = M
+    M = M-((M%*%z%*%t(M%*%z))/((t(z)%*%M%*%z)[1]))+((y%*%t(y))/((t(z)%*%y)[1]))
+    if(abs((t(v)%*%z)[1]) < epsilon){M = M.old}
+    alpha = alpha.default
+    a = at
+}
+  
+
+## OUTPUT
+a # FINAL ESTIMATE
+loglike(a) # OBJECTIVE FUNCTION AT ESTIMATE
+g.prime(a) 	# GRADIENT AT ESTIMATE
+a.values # ITERATION RECORD
+
+```
+
+
+```{r}
+## PLOT OF CONVERGENCE
+z = matrix(0,100,100)
+a1.max = max(4.5,ceiling(max(a.values[,1])))
+a1.min = min(-2,floor(min(a.values[,1])))
+a2.max = max(3,ceiling(max(a.values[,2])))
+a2.min = min(-2,floor(min(a.values[,2])))
+a1 = seq(a1.min,a1.max,length=100)
+a2 = seq(a2.min,a2.max,length=100)
+for(i in 1:100){
+      for(j in 1:100){
+      	    z[i,j] = loglike(c(a1[i],a2[j]))
+      }
+}
+contour(a1,a2,z,nlevels=20,drawlabels=FALSE)
+for(i in 1:itr){
+      segments(a.values[i,1],a.values[i,2],a.values[i+1,1],
+      a.values[i+1,2],lty=2)
+}
+
+```
+
+```{r}
+# Apply Quasi-Newton Optimization-WITHOUT STEPHALVING
+#Initial Values
+a_2.values = matrix(0,itr+1,2)
+a_2 = c(0.5,0.5)
+a_2.values[1,] = a_2
+M_2 = diag(-1,2,2)
+for(i in 1:itr){
+  hessian.inv_2 = solve(M_2)
+  at_2 = a_2 - alpha*hessian.inv%*%g.prime(a)
+  # REDUCE ALPHA UNTIL A CORRECT STEP IS REACHED
+  a_2.values[i+1,] = at_2
+  z_2 = at_2-a_2
+  y_2 = g.prime(at_2)-g.prime(a_2)
+  v_2 = y_2-M_2%*%z_2
+  M.old_2 = M_2
+  M_2 = M_2-((M_2%*%z_2%*%t(M_2%*%z_2))/((t(z_2)%*%M_2%*%z_2)[1]))+((y_2%*%t(y_2))/((t(z_2)%*%y_2)[1]))
+  if(abs((t(v_2)%*%z_2)[1]) < epsilon){M_2 = M.old_2}
+  alpha = alpha.default
+  a_2 = at_2
+}
+
+
+## OUTPUT
+a_2 # FINAL ESTIMATE
+loglike(a_2) # OBJECTIVE FUNCTION AT ESTIMATE
+g.prime(a_2) 	# GRADIENT AT ESTIMATE
+a_2.values # ITERATION RECORD
+
+```
+
+
+```{r}
+## PLOT OF CONVERGENCE
+z_2 = matrix(0,100,100)
+a1_2.max = max(4.5,ceiling(max(a_2.values[,1])))
+a1_2.min = min(-2,floor(min(a_2.values[,1])))
+a2_2.max = max(3,ceiling(max(a_2.values[,2])))
+a2_2.min = min(-2,floor(min(a_2.values[,2])))
+a1_2 = seq(a1_2.min,a1_2.max,length=100)
+a2_2 = seq(a2_2.min,a2_2.max,length=100)
+for(i in 1:100){
+      for(j in 1:100){
+      	    z[i,j] = loglike(c(a1_2[i],a2_2[j]))
+      }
+}
+contour(a1_2,a2_2,z_2,nlevels=20,drawlabels=FALSE)
+for(i in 1:itr){
+      segments(a_2.values[i,1],a_2.values[i,2],a_2.values[i+1,1],
+      a_2.values[i+1,2],lty=2)
+}
+
+```
+\
+\ \ Conclusion:
+\
+\ \ From the above, we could see that the Quasi-Newton optimization with step-halving gives the same answer as the methods applied in the preceding questions. Starting at $\alpha^{(0)}=(0.5,0.5)^{T}$ and based on step-halving, the quasi-Newton optimization produces MLE $\hat{\alpha}=(1.097153 0.9375546)^{T}$.It takes 11 iterations to reach the optimum, faster than the Fisher scoring and method of steepest ascent, a little bit slower than the Newton method. However, without stephalving the algorithm fails to converge and cannot find the optimum.
