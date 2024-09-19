@@ -4,4 +4,4 @@ FDU Stats Undergrad Course
 
 Assignments implemented in R
 
-Textbook: 《Computational Statistics, 2nd》By GEOF H.GIVENS & JENNIFER A.HOETING
+Textbook: 《Computational Statistics, 2ed》By GEOF H.GIVENS & JENNIFER A.HOETING
