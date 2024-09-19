@@ -1,0 +1,426 @@
+---
+title: "Chapter 3 Problem 3.6a"
+author: "Lizhuo ZHOU 20307100132"
+output: pdf_document
+date: '2023-10-22'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Problem 3.6a
+# n 		= number of observations in the data set
+# m 		= number of predictors in the data set
+# chromosome = matrix of P individuals for a generation where each row
+# 		  is a chromosome included for the model
+# 		  (1 = father, 0 = mother)
+# chromosome.next 	= matrix of P individuals for the new generation where each
+# 		  row is a chromosome included for the model
+# 		  (1 = father, 0 = mother)
+# ordering.PML 	= PML values for the models of each generation
+# P 		= size of each generation
+# itr 		= number of generations to run
+# m.rate 	= mutation rate
+# r 		= ranks of PMLs for a generation
+# phi 		= fitness values for a generation
+# ordering = vector of a chromosome included in the best model found
+# 		  (1 = father, 0 = mother)
+# best.PML 	= PML value for the best model found
+# PML 		= PML values for the models at each step
+
+```
+
+
+```{r}
+#First read the data, set the number of generations and the mutation rate
+rm(list=ls()) 
+genedata<-read.table("geneticmapping.dat",header=TRUE)
+P<-96
+m.rate<-0.01
+n<-ncol(genedata)
+parent<-matrix(0,nrow=P,ncol=n)
+m = length(genedata[1,])
+itr = 10000
+r = matrix(0,P,1)
+phi = matrix(0,P,1)
+chromosome = matrix(0,P,m)
+chromosome.next = matrix(0,P,m)
+ordering.PML = matrix(0,P,1)
+PML = matrix(0,P,itr)
+ordering = NULL
+best.PML = -100000
+best.PML.gen = rep(0,itr)
+
+#Define a function that calculates genetic distances
+d<-function(x,i,j){
+  ii<-x[i]
+  jj<-x[j]
+  dis<-abs(as.numeric(ii-jj))/96
+  return(dis)
+}
+
+
+#Define a function that calculates the maximal profile likelihood
+Profile_Likelihood<-function(i){
+  s<-0
+  for(j in 1:11){
+    if(d(i,j,j+1)==1){
+      s<-s
+    }else if(d(i,j,j+1)==0){
+      s<-s
+    }else{
+      s<- s+96*((1-d(i,j,j+1))*log(1-d(i,j,j+1))+d(i,j,j+1)*log(d(i,j,j+1)))
+      }
+  }
+  return(s)
+}
+
+# Function to perform order crossover
+order_crossover <- function(parent1, parent2,pos) {
+  # Choose two random crossover points
+  child_1 <- rep(NA, 12)
+  #child_2 <- rep(NA, 12)
+  if (pos==1){
+    child_1[2:length(parent1)] <- parent1[2:length(parent1)]
+    child_1[1]<-parent2[1]
+    #child_2[2:length(parent2)] <- parent2[2:length(parent2)]
+    #child_2[1]<-parent1[1]
+  }else{
+    child_1[1:pos]<-parent1[1:pos]
+    child_1[pos+1:length(parent1)]<-parent2[pos+1:length(parent2)]
+    #child_2[1:pos]<-parent2[1:pos]
+    #child_2[pos+1:length(parent2)]<-parent1[pos+1:length(parent1)]
+  }
+  child_1<-child_1[1:12]
+  #child_2<-child_2[1:12]
+
+  return(child_1)
+}
+
+#Experiment 1
+
+# INITIALIZES STARTING GENERATION, FITNESS VALUES
+set.seed(321321123)
+genedata<-matrix(unlist(genedata),nrow=96,ncol=12)
+first_GEN<-genedata[sample(1:nrow(genedata),P),]
+for(i in 1:P){
+	chromosome[i,]<-first_GEN[i,]
+	ordering.PML[i] <-Profile_Likelihood(chromosome[i,])
+}
+if(sum(ordering.PML) >best.PML){
+			ordering <- chromosome
+			best.PML <- sum(ordering.PML)
+		}
+r = rank(ordering.PML)
+phi = 2*r/(P*(P+1))
+best.PML.gen[1]=best.PML
+
+
+## MAIN
+for(j in 1:itr-1){
+
+	# BUILDS THE NEW GENERATION, SELECTING FIRST PARENT BASED ON
+	# FITNESS AND THE SECOND PARENT AT RANDOM
+	for(i in 1:96){
+		parent.1 = chromosome[sample(1:P,1,prob=phi),]
+		parent.2 = chromosome[sample(1:P,1),]
+		#parent.2 = chromosome[-((chromosome[sample(1:P,1),])%in% chromosome),][sample(1:P-1,1)]
+		pos = sample(1:(m-1),1)
+		mutate = rbinom(m,1,m.rate)
+		chromosome.next[i,] = order_crossover(parent.1,parent.2,pos)
+		chromosome.next[i,] = (chromosome.next[i,]+mutate)%%2
+	}
+	chromosome = chromosome.next
+
+	# UPDATES PML VALUES, FITNESS VALUES FOR NEW GENERATION
+	for(i in 1:P){
+		ordering.PML[i] = Profile_Likelihood(chromosome[i,])
+		PML[i,j+1] = ordering.PML[i]
+		if(ordering.PML[i] >best.PML){
+			ordering = chromosome[i,]
+			best.PML = ordering.PML[i]
+		}
+	}
+	
+	if(sum(ordering.PML) >best.PML){
+			ordering = chromosome
+			best.PML = sum(ordering.PML)
+		}
+	best.PML.gen[j+1]=best.PML
+	r = rank(ordering.PML)
+	phi = 2*r/(P*(P+1))
+}
+
+## OUTPUT
+chromosome 		# BEST LIST OF PREDICTORS FOUND
+best.PML 	# PML VALUE
+
+```
+```{r}
+#Experiment 2
+
+# INITIALIZES STARTING GENERATION, FITNESS VALUES
+set.seed(321328342)
+genedata<-matrix(unlist(genedata),nrow=96,ncol=12)
+first_GEN<-genedata[sample(1:nrow(genedata),P),]
+for(i in 1:P){
+	chromosome[i,]<-first_GEN[i,]
+	ordering.PML[i] <-Profile_Likelihood(chromosome[i,])
+}
+if(sum(ordering.PML) >best.PML){
+			ordering <- chromosome
+			best.PML <- sum(ordering.PML)
+		}
+r = rank(ordering.PML)
+phi = 2*r/(P*(P+1))
+best.PML.gen[1]=best.PML
+
+
+## MAIN
+for(j in 1:itr-1){
+
+	# BUILDS THE NEW GENERATION, SELECTING FIRST PARENT BASED ON
+	# FITNESS AND THE SECOND PARENT AT RANDOM
+	for(i in 1:96){
+		parent.1 = chromosome[sample(1:P,1,prob=phi),]
+		parent.2 = chromosome[sample(1:P,1),]
+		#parent.2 = chromosome[-((chromosome[sample(1:P,1),])%in% chromosome),][sample(1:P-1,1)]
+		pos = sample(1:(m-1),1)
+		mutate = rbinom(m,1,m.rate)
+		chromosome.next[i,] = order_crossover(parent.1,parent.2,pos)
+		chromosome.next[i,] = (chromosome.next[i,]+mutate)%%2
+	}
+	chromosome = chromosome.next
+
+	# UPDATES PML VALUES, FITNESS VALUES FOR NEW GENERATION
+	for(i in 1:P){
+		ordering.PML[i] = Profile_Likelihood(chromosome[i,])
+		PML[i,j+1] = ordering.PML[i]
+		if(ordering.PML[i] >best.PML){
+			ordering = chromosome[i,]
+			best.PML = ordering.PML[i]
+		}
+	}
+	
+	if(sum(ordering.PML) >best.PML){
+			ordering = chromosome
+			best.PML = sum(ordering.PML)
+		}
+	best.PML.gen[j+1]=best.PML
+	r = rank(ordering.PML)
+	phi = 2*r/(P*(P+1))
+}
+
+## OUTPUT
+chromosome 		# BEST LIST OF PREDICTORS FOUND
+best.PML 	# PML VALUE
+
+
+
+```
+
+```{r}
+#Experiment 3
+
+# INITIALIZES STARTING GENERATION, FITNESS VALUES
+set.seed(3241623)
+genedata<-matrix(unlist(genedata),nrow=96,ncol=12)
+first_GEN<-genedata[sample(1:nrow(genedata),P),]
+for(i in 1:P){
+	chromosome[i,]<-first_GEN[i,]
+	ordering.PML[i] <-Profile_Likelihood(chromosome[i,])
+}
+if(sum(ordering.PML) >best.PML){
+			ordering <- chromosome
+			best.PML <- sum(ordering.PML)
+		}
+r = rank(ordering.PML)
+phi = 2*r/(P*(P+1))
+best.PML.gen[1]=best.PML
+
+
+## MAIN
+for(j in 1:itr-1){
+
+	# BUILDS THE NEW GENERATION, SELECTING FIRST PARENT BASED ON
+	# FITNESS AND THE SECOND PARENT AT RANDOM
+	for(i in 1:96){
+		parent.1 = chromosome[sample(1:P,1,prob=phi),]
+		parent.2 = chromosome[sample(1:P,1),]
+		#parent.2 = chromosome[-((chromosome[sample(1:P,1),])%in% chromosome),][sample(1:P-1,1)]
+		pos = sample(1:(m-1),1)
+		mutate = rbinom(m,1,m.rate)
+		chromosome.next[i,] = order_crossover(parent.1,parent.2,pos)
+		chromosome.next[i,] = (chromosome.next[i,]+mutate)%%2
+	}
+	chromosome = chromosome.next
+
+	# UPDATES PML VALUES, FITNESS VALUES FOR NEW GENERATION
+	for(i in 1:P){
+		ordering.PML[i] = Profile_Likelihood(chromosome[i,])
+		PML[i,j+1] = ordering.PML[i]
+		if(ordering.PML[i] >best.PML){
+			ordering = chromosome[i,]
+			best.PML = ordering.PML[i]
+		}
+	}
+	
+	if(sum(ordering.PML) >best.PML){
+			ordering = chromosome
+			best.PML = sum(ordering.PML)
+		}
+	best.PML.gen[j+1]=best.PML
+	r = rank(ordering.PML)
+	phi = 2*r/(P*(P+1))
+}
+
+## OUTPUT
+chromosome 		# BEST LIST OF PREDICTORS FOUND
+best.PML 	# PML VALUE
+
+
+
+```
+```{r}
+#Experiment 4
+
+# INITIALIZES STARTING GENERATION, FITNESS VALUES
+set.seed(32000623)
+genedata<-matrix(unlist(genedata),nrow=96,ncol=12)
+first_GEN<-genedata[sample(1:nrow(genedata),P),]
+for(i in 1:P){
+	chromosome[i,]<-first_GEN[i,]
+	ordering.PML[i] <-Profile_Likelihood(chromosome[i,])
+}
+if(sum(ordering.PML) >best.PML){
+			ordering <- chromosome
+			best.PML <- sum(ordering.PML)
+		}
+r = rank(ordering.PML)
+phi = 2*r/(P*(P+1))
+best.PML.gen[1]=best.PML
+
+
+## MAIN
+for(j in 1:itr-1){
+
+	# BUILDS THE NEW GENERATION, SELECTING FIRST PARENT BASED ON
+	# FITNESS AND THE SECOND PARENT AT RANDOM
+	for(i in 1:96){
+		parent.1 = chromosome[sample(1:P,1,prob=phi),]
+		parent.2 = chromosome[sample(1:P,1),]
+		#parent.2 = chromosome[-((chromosome[sample(1:P,1),])%in% chromosome),][sample(1:P-1,1)]
+		pos = sample(1:(m-1),1)
+		mutate = rbinom(m,1,m.rate)
+		chromosome.next[i,] = order_crossover(parent.1,parent.2,pos)
+		chromosome.next[i,] = (chromosome.next[i,]+mutate)%%2
+	}
+	chromosome = chromosome.next
+
+	# UPDATES PML VALUES, FITNESS VALUES FOR NEW GENERATION
+	for(i in 1:P){
+		ordering.PML[i] = Profile_Likelihood(chromosome[i,])
+		PML[i,j+1] = ordering.PML[i]
+		if(ordering.PML[i] >best.PML){
+			ordering = chromosome[i,]
+			best.PML = ordering.PML[i]
+		}
+	}
+	
+	if(sum(ordering.PML) >best.PML){
+			ordering = chromosome
+			best.PML = sum(ordering.PML)
+		}
+	best.PML.gen[j+1]=best.PML
+	r = rank(ordering.PML)
+	phi = 2*r/(P*(P+1))
+}
+
+## OUTPUT
+chromosome 		# BEST LIST OF PREDICTORS FOUND
+best.PML 	# PML VALUE
+
+
+
+
+```
+
+```{r}
+#Experiment 5
+
+# INITIALIZES STARTING GENERATION, FITNESS VALUES
+set.seed(12382766)
+genedata<-matrix(unlist(genedata),nrow=96,ncol=12)
+first_GEN<-genedata[sample(1:nrow(genedata),P),]
+for(i in 1:P){
+	chromosome[i,]<-first_GEN[i,]
+	ordering.PML[i] <-Profile_Likelihood(chromosome[i,])
+}
+if(sum(ordering.PML) >best.PML){
+			ordering <- chromosome
+			best.PML <- sum(ordering.PML)
+		}
+r = rank(ordering.PML)
+phi = 2*r/(P*(P+1))
+best.PML.gen[1]=best.PML
+
+
+## MAIN
+for(j in 1:itr-1){
+
+	# BUILDS THE NEW GENERATION, SELECTING FIRST PARENT BASED ON
+	# FITNESS AND THE SECOND PARENT AT RANDOM
+	for(i in 1:96){
+		parent.1 = chromosome[sample(1:P,1,prob=phi),]
+		parent.2 = chromosome[sample(1:P,1),]
+		#parent.2 = chromosome[-((chromosome[sample(1:P,1),])%in% chromosome),][sample(1:P-1,1)]
+		pos = sample(1:(m-1),1)
+		mutate = rbinom(m,1,m.rate)
+		chromosome.next[i,] = order_crossover(parent.1,parent.2,pos)
+		chromosome.next[i,] = (chromosome.next[i,]+mutate)%%2
+	}
+	chromosome = chromosome.next
+
+	# UPDATES PML VALUES, FITNESS VALUES FOR NEW GENERATION
+	for(i in 1:P){
+		ordering.PML[i] = Profile_Likelihood(chromosome[i,])
+		PML[i,j+1] = ordering.PML[i]
+		if(ordering.PML[i] >best.PML){
+			ordering = chromosome[i,]
+			best.PML = ordering.PML[i]
+		}
+	}
+	
+	if(sum(ordering.PML) >best.PML){
+			ordering = chromosome
+			best.PML = sum(ordering.PML)
+		}
+	best.PML.gen[j+1]=best.PML
+	r = rank(ordering.PML)
+	phi = 2*r/(P*(P+1))
+}
+
+## OUTPUT
+chromosome 		# BEST LIST OF PREDICTORS FOUND
+best.PML 	# PML VALUE
+
+
+
+
+```
+\
+\ \ Conclusion:
+\
+\ \ From Experiment 1-5 above, we could see that the results produced by genetic algorithm after multiple iterations are dominated by 'strong' parent generations(in this case, parent generations with large Profile Likelihood).
+\
+\ \ Performance of the Algorithm:
+\
+\ \ Robust, while lack of diversity.
+\
+\ \ Ideas for improved reseach:
+\
+\ \ Try different mutation rates, times of iterations and size of a generations.
+

@@ -1,0 +1,249 @@
+---
+title: "Chapter 3 Problem 3.5a"
+author: "Lizhuo ZHOU 20307100132"
+output: pdf_document
+date: '2023-10-22'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Problem 3.5a
+#Import the Geneticmapping Dataset
+rm(list=ls()) 
+genedata<-read.table("geneticmapping.dat",header=TRUE)
+p<-ncol(genedata)
+N_Chromosome<-length(genedata[,1])
+n<-20
+```
+
+
+
+```{r}
+
+# Function to generate 20 neighbors by swapping two alleles
+generate_neighbors <- function(ordering) {
+  neighbors <- matrix(nrow=20, ncol=12)
+  for (i in 1:20) {
+    new_ordering<-ordering
+    # Select two indices to swap
+    indices <- sample(1:12,2)
+    # Swap the alleles
+    temp <- new_ordering[indices[1]]
+    new_ordering[indices[1]] <- new_ordering[indices[2]]
+    new_ordering[indices[2]] <- temp
+    # Add the new ordering to the list of neighbors
+    neighbors[i,] <- new_ordering
+  }
+  return(neighbors)
+}
+
+
+#Define a function that calculates genetic distances
+d<-function(x,i,j){
+  ii<-x[i]
+  jj<-x[j]
+  dis<-abs(as.numeric(ii-jj))/20
+  return(dis)
+}
+
+#Define a function that calculates the maximal profile likelihood
+Profile_Likelihood<-function(neighbors){
+  s<-0
+  for(j in 1:11){
+    if(d(neighbors,j,j+1)==1){
+      s<-s
+    }else if(d(neighbors,j,j+1)==0){
+      s<-s
+    }else{
+      s<- s+20*((1-d(neighbors,j,j+1))*log(1-d(neighbors,j,j+1))+d(neighbors,j,j+1)*log(d(neighbors,j,j+1)))
+      }
+  }
+  return(s)
+}
+
+
+# Local search
+local_search <- function(initial_ordering) {
+  # Start with the initial ordering
+  current_ordering <- initial_ordering
+  current_ML <- Profile_Likelihood(current_ordering)
+  neighbor_PML<-c()
+  for (i in 1:20) {
+    # Generate neighbors
+    neighbors <- generate_neighbors(current_ordering)
+    # Calculate Profile Likelihood for all neighbors
+    neighbor_PML[i] <- Profile_Likelihood(neighbors[i,])
+  }
+  # Find the best neighbor
+  best_neighbor_index <- which.max(neighbor_PML)
+  # Move to the best neighbor
+  current_ordering <- neighbors[best_neighbor_index,]
+  current_PML <- neighbor_PML[best_neighbor_index]
+  
+  return(list(ordering <- current_ordering, PML <- current_PML))
+}
+
+
+#Calculation
+
+
+#Experiment1
+PML_chromosome_1<-matrix(ncol=12,nrow=nrow(genedata))
+PML_1<-c()
+for(i in 1:96){
+  g<-matrix(unlist(genedata[i,]))
+  set.seed(220027)
+  result<-local_search(t(g))
+  PML_chromosome_1[i,]<-matrix(unlist(result[1]))
+  PML_1[i]<-matrix(unlist(result[2]))
+}
+
+PML_chromosome_1
+
+```
+
+```{r}
+PML_1
+```
+```{r}
+Total_PML_1<-sum(PML_1)
+Total_PML_1
+```
+```{r}
+#Experiment2
+PML_chromosome_2<-matrix(ncol=12,nrow=nrow(genedata))
+PML_2<-c()
+for(i in 1:96){
+  g<-matrix(unlist(genedata[i,]))
+  set.seed(220023)
+  result<-local_search(t(g))
+  PML_chromosome_2[i,]<-matrix(unlist(result[1]))
+  PML_2[i]<-matrix(unlist(result[2]))
+}
+
+PML_chromosome_2
+
+
+```
+
+```{r}
+PML_2
+
+```
+
+```{r}
+Total_PML_2<-sum(PML_2)
+Total_PML_2
+```
+```{r}
+#Experiment3
+PML_chromosome_3<-matrix(ncol=12,nrow=nrow(genedata))
+PML_3<-c()
+for(i in 1:96){
+  g<-matrix(unlist(genedata[i,]))
+  set.seed(220019)
+  result<-local_search(t(g))
+  PML_chromosome_3[i,]<-matrix(unlist(result[1]))
+  PML_3[i]<-matrix(unlist(result[2]))
+}
+
+PML_chromosome_3
+
+```
+
+
+```{r}
+PML_3
+```
+
+```{r}
+Total_PML_3<-sum(PML_3)
+Total_PML_3
+
+```
+
+
+
+```{r}
+#Experiment4
+PML_chromosome_4<-matrix(ncol=12,nrow=nrow(genedata))
+PML_4<-c()
+for(i in 1:96){
+  g<-matrix(unlist(genedata[i,]))
+  set.seed(220002)
+  result<-local_search(t(g))
+  PML_chromosome_4[i,]<-matrix(unlist(result[1]))
+  PML_4[i]<-matrix(unlist(result[2]))
+}
+
+PML_chromosome_4
+
+
+```
+
+```{r}
+PML_4
+```
+
+
+```{r}
+Total_PML_4<-sum(PML_4)
+Total_PML_4
+```
+
+```{r}
+#Experiment5
+PML_chromosome_5<-matrix(ncol=12,nrow=nrow(genedata))
+PML_5<-c()
+for(i in 1:96){
+  g<-matrix(unlist(genedata[i,]))
+  set.seed(19032)
+  result<-local_search(t(g))
+  PML_chromosome_5[i,]<-matrix(unlist(result[1]))
+  PML_5[i]<-matrix(unlist(result[2]))
+}
+
+PML_chromosome_5
+
+
+```
+
+
+```{r}
+PML_5
+```
+
+```{r}
+Total_PML_5<-sum(PML_5)
+Total_PML_5
+```
+
+\
+\ \ Conclusion:
+\
+\ \ Results are shown as the above. It seems Experiment 5 results in the optimal solution.
+\
+\ \ The performance of the algorithm:
+\
+\ \ The algorithm performs quite fast. However, it is obvious from the results of experiment 1-5 that the robustness of the algorithm is dubious, and the optimal combinations of genes found are highly dependent on the randomly exchanged alleles while producing 20 neighborhoods.
+\
+\ \ Clearly, the maximal-profile-likelihood genetic map we found above are more likely to be a local optimum than a global optimum.
+\
+\ \ Ideas for improved research:
+\
+\ \ Running the algorithm for multiple times(10000,100000,etc., as many times as your computer could stand), and choose the genetic map that has the largest profile-likelihood.
+
+
+
+
+
+
+
+
+
+
+

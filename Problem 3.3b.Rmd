@@ -1,0 +1,229 @@
+---
+title: "Chapter 3 Problem 3.3b"
+author: "Lizhuo ZHOU 20307100132"
+output: pdf_document
+date: '2023-10-22'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Problem 3.3b
+rm(list=ls()) 
+baseball=read.table("baseball.dat",header=TRUE)
+for (i in 1:nrow(baseball)){
+  baseball[i,1]=log(as.numeric(baseball[i,1]))}
+baseball=as.data.frame(lapply(baseball,as.numeric))
+baseball1=baseball[,-1]
+colth=ncol(baseball[,-1])
+cc=c(1:colth)
+
+#Generate starting points with 0,1 sequence
+#Set seed
+set.seed(33)
+start=sample(c(0,1),colth,replace=TRUE)
+
+#Function that calculate AIC
+AIC= function(y_test,y_pred,k,n){
+  resid <- y_test-y_pred
+  SSR <- sum(resid ** 2)
+  return(2*k+n*log(SSR/n)) 
+}
+
+#Define the K-Neighborhood Function, K=1,2,3
+#Define 1-Neighborhood Function
+ON<-function(currentpoint){
+  l<-length(currentpoint)
+  ON<-matrix(0,nrow=l,ncol=l)
+  for (i in 1:l){
+    ON[i,]<-currentpoint
+    ON[i,i]<-1-currentpoint[i]
+  }
+  return(ON)
+}
+
+#Define 2-Neighborhood Function
+TWN<-function(currentpoint){
+  l<-length(currentpoint)
+  TWN<-matrix(0,nrow=l*(l-1)/2,ncol=l)
+  t=0
+  for (i in 1:(l-1)){
+    for (j in (i+1):l){
+      t=t+1
+      TWN[t,1:l]<-currentpoint
+      TWN[t,i]<-1-currentpoint[i]
+      TWN[t,j]<-1-currentpoint[j]
+    }}
+  return(TWN)
+}
+
+#Define 3-Neighborhood Function
+THN<-function(currentpoint){
+  l<-length(currentpoint)
+  THN<-matrix()
+  for (i in 1:(l-2)){
+    for (j in (i+1):(l-1)){
+      for (h in (j+1):l){
+        THN[i,]=currentpoint
+        THN[i,i]=1-currentpoint[i]
+        THN[i,j]=1-currentpoint[j]
+        THN[i,h]=1-currentpoint[h]
+      }}}
+  return(THN)
+}
+
+#Define the function that calculates regression and give AIC output
+AIC_Calculator<-function(point){
+  point=as.logical(point)
+  #As here we choose 0-1 variables as samples
+  #We should transform the sample into logic variables when we define the function of AIC regression calculation
+  datase=data.frame(baseball[,1],baseball1[,point])
+  names(datase)[1]='salary'
+  attach(datase)
+  y=datase[,1]
+  lmg=lm(salary~.,data=datase)
+  y_pred=predict(lmg)
+  detach(datase)
+  k=length(point)+2
+  n=nrow(baseball)-1
+  AICp=AIC(y_test=as.numeric(y),y_pred=y_pred,k=k,n=n)
+  return(AICp)
+}
+
+#Simulate Annealing
+#Step 1: Randomly select a point in the k-neighborhood
+
+#Define step 1 of Simulate Annealing(1-Neighborhood)
+ON_SA_Step1<-function(point){
+  tneigh=ON(point)
+  le=nrow(tneigh)
+  ty=sample(c(1:le),1)
+  theta_star=tneigh[le,]
+  return(theta_star)
+}
+
+#Define step 1 of Simulate Annealing(2-Neighborhood)
+TWN_SA_Step1<-function(point){
+  tneigh<-TWN(point)
+  le=nrow(tneigh)
+  ty=sample(c(1:le),1)
+  theta_star=tneigh[le,]
+  return(theta_star)
+}
+
+#Define step 1 of Simulate Annealing(3-Neighborhood)
+THN_SA_Step1=function(point){
+  tneigh=THN(point)
+  le=nrow(tneigh)
+  ty=sample(c(1:le),1)
+  theta_star=tneigh[le,]
+  return(theta_star)
+}
+
+#Define Step 2 of Simulated Annealing, iteration function
+
+SA_Step2<-function(K_Neighborhood,point,tau){
+  theta_star=K_Neighborhood(point)
+  posibility=exp((AIC_Calculator(point)-AIC_Calculator(theta_star))/tau)
+  pp=min(1,posibility)
+  x=runif(1,0,1)
+  if (x<pp){
+    point=theta_star
+  }
+  else{
+    point=point
+  }
+  return (point)
+}
+
+###################Begin Calculation#############
+
+#Define Initial Temperature
+tau=6
+
+#Define Cooling Speed
+alpha=0.9
+
+#Define Times of Duplication
+m=10
+
+#Define End Temperature
+b=0.03
+
+#Define maximal iterations
+maxit=10000
+it=1
+
+#1-Neighborhood
+point<-start
+while (tau > b){
+  for (i in c(1:m)){
+  point=SA_Step2(ON_SA_Step1,point,tau)
+  it=it+1}
+  tau=tau/(1+tau*alpha)
+  m=floor(m*1.1)
+  if (it>maxit) {break}
+}
+
+ON_Point<-point
+ON_AIC<-AIC_Calculator(point)
+
+ON_Point
+
+ON_AIC
+
+```
+
+
+
+```{r}
+#2-Neighborhood
+point<-start
+while (tau > b){
+  for (i in c(1:m)){
+    point=SA_Step2(TWN_SA_Step1,point,tau)
+    it=it+1}
+  tau=tau/(1+tau*alpha)
+  m=floor(m*1.1)
+  if (it>maxit) {break}
+}
+TWN_Point<-point
+TWN_AIC<-AIC_Calculator(point)
+
+TWN_Point
+
+TWN_AIC
+
+
+```
+
+
+```{r}
+#3-Neighborhood
+point<-start
+while (tau > b){
+  for (i in c(1:m)){
+    point=SA_Step2(THN_SA_Step1,point,tau)
+    it=it+1}
+  tau=tau/(1+tau*alpha)
+  m=floor(m*1.1)
+  if (it>maxit) {break}
+}
+THN_Point<-point
+THN_AIC<-AIC_Calculator(point)
+
+
+THN_Point
+
+THN_AIC
+
+```
+\
+\ \ Conclusion:
+\
+\ \ From the above, we could see that the result and calculation speed of Simulated Annealing Method is quite similar for 2-Neighborhoods and 3-Neighborhoods(and 1-Neighborhood).
+
+

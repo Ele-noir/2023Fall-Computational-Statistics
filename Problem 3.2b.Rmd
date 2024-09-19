@@ -1,0 +1,234 @@
+---
+title: "Chapter 3 Problem 3.2b"
+author: "Lizhuo ZHOU 20307100132"
+output: pdf_document
+date: '2023-10-22'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Problem 3.2b
+#First, adopt Example 3.7
+### EXAMPLE 3.7 TABU SEARCH
+#########################################################################
+# baseball.dat 	= entire data set
+# baseball.sub 	= matrix of all predictors
+# salary.log 	= response, log salary
+# n 		= number of observations in the data set
+# m 		= number of predictors in the data set
+# run 		= vector of the parameters included in the best model found
+# 		  (1 = included, 0 = omitted)
+# best.aic 	= AIC value for the best model found
+# aics 		= AIC values for the model at each step
+# 		  (used for plotting)
+# itr 		= number of iterations
+# tabu 		= vector containing tabu terms for each parameter
+# tabu.term 	= default length of term for tabu moves
+#########################################################################
+
+rm(list=ls())
+baseball.dat = read.table("baseball.dat",header=TRUE)
+baseball.dat$freeagent = factor(baseball.dat$freeagent)
+baseball.dat$arbitration = factor(baseball.dat$arbitration)
+baseball.sub = baseball.dat[,-1]
+salary.log = log(baseball.dat$salary)
+n = length(salary.log)
+m = length(baseball.sub[1,])
+tabu = rep(0,m)
+tabu.term = 2
+itr = 100
+aics = rep(0,itr+1)
+
+# INITIALIZES STARTING RUN
+set.seed(139992)
+run = rbinom(m,1,.5)
+run.current = run
+run.vars = baseball.sub[,run.current==1]
+g = lm(salary.log~.,run.vars)
+run.aic = extractAIC(g)[2]
+best.aic = run.aic
+aics[1] = run.aic
+
+## MAIN
+for(j in 1:itr){
+	run.aic = 0
+
+	# TESTS ALL MODELS IN THE 1-NEIGHBORHOOD AND CHOOSES THE BEST
+	# MODEL IF THE MODEL IS NOT TABU, OTHERWISE IT SELECTS THE
+	# LEAST UNFAVORABLE UNLESS THE MODEL IS THE BEST SEEN OVERALL
+	for(i in 1:m){
+		run.step = run.current
+		run.step[i] = !run.current[i]
+		run.vars = baseball.sub[,run.step==1]
+		g = lm(salary.log~.,run.vars)
+		run.step.aic = extractAIC(g)[2]
+		if(run.step.aic < run.aic && tabu[i]==0){
+		run.next = run.step
+		run.aic = run.step.aic
+		pos = i
+	}
+	if(run.step.aic < run.aic && tabu[i]!=0 &&
+	run.step.aic < best.aic){
+	run.next = run.step
+	run.aic = run.step.aic
+	pos = i
+	}
+
+	# DECREMENT TABU TERMS
+	if(tabu[i]!=0){tabu[i]=tabu[i]-1}
+	}
+	tabu[pos] = tabu.term
+	run.current = run.next
+	if(run.aic < best.aic){
+		best.aic = run.aic
+		run = run.current
+	}
+	aics[j+1] = run.aic
+}
+
+## OUTPUT
+run 		# BEST LIST OF PREDICTORS FOUND
+best.aic 	# AIC VALUE
+aics		# VECTOR OF AIC VALUES	
+
+
+```
+
+\
+\ \ Next, compare the effect of using different tabu tenures. Try to write a function with the explanatory variable being tabu tenure and response variable being the optimal AIC.
+
+```{r}
+Best_tenure<-function(tenure){
+  tabu.term<-tenure
+  for(j in 1:itr){
+  run.aic <- 0
+  
+  # TESTS ALL MODELS IN THE 1-NEIGHBORHOOD AND CHOOSES THE BEST
+  # MODEL IF THE MODEL IS NOT TABU, OTHERWISE IT SELECTS THE
+  # LEAST UNFAVORABLE UNLESS THE MODEL IS THE BEST SEEN OVERALL
+  for(i in 1:m){
+    run.step <- run.current
+    run.step[i] = !run.current[i]
+    run.vars = baseball.sub[,run.step==1]
+    g = lm(salary.log~.,run.vars)
+    run.step.aic = extractAIC(g)[2]
+    if(run.step.aic < run.aic && tabu[i]==0){
+      run.next = run.step
+      run.aic = run.step.aic
+      pos = i
+    }
+    if(run.step.aic < run.aic && tabu[i]!=0 &&
+       run.step.aic < best.aic){
+      run.next = run.step
+      run.aic = run.step.aic
+      pos = i
+    }
+    
+    # DECREMENT TABU TERMS
+    if(tabu[i]!=0){tabu[i]=tabu[i]-1}
+  }
+  tabu[pos] = tabu.term
+  run.current = run.next
+  if(run.aic < best.aic){
+    best.aic = run.aic
+    run = run.current
+  }
+  aics[j+1] = run.aic
+}
+
+## OUTPUT
+run         # BEST LIST OF PREDICTORS FOUND
+best.aic    # AIC VALUE # VECTOR OF AIC VALUES  
+}
+
+```
+
+```{r}
+#Experiment using different tabu tenures
+t<-c(1:25)
+
+for(i in 1:25){
+ t[i]=Best_tenure(i)
+}
+
+t
+
+```
+\
+\ \ We could see that, tabu tenure with proper magnitude(in this case, the range is$[4,5,...,12,15,17]$) will produce solutions that have lowest AICs.
+\
+\ \ From the above, define a new attribute, when the $\Delta AIC=(AIC_{i}-AIC_{i+1})>c, c: Constant$, this attribute be included in the tabu list(and also for extra long tabu terms), i.e. the step would move to the next.
+
+```{r}
+# tabu = vector containing tabu terms for each parameter
+# tabu.term 	= default length of term for tabu moves
+Condition_Attribute_C<-function(c){
+  tabu.term<-7
+  for(j in 1:itr){
+  run.aic <- 0
+  
+  # TESTS ALL MODELS IN THE 1-NEIGHBORHOOD AND CHOOSES THE BEST
+  # MODEL IF THE MODEL IS NOT TABU, OTHERWISE IT SELECTS THE
+  # LEAST UNFAVORABLE UNLESS THE MODEL IS THE BEST SEEN OVERALL
+  for(i in 1:m){
+    run.step <- run.current
+    run.step[i] = !run.current[i]
+    run.vars = baseball.sub[,run.step==1]
+    g = lm(salary.log~.,run.vars)
+    run.step.aic = extractAIC(g)[2]
+    if(run.step.aic < run.aic && tabu[i]==0){
+      run.next = run.step
+      run.aic = run.step.aic
+      pos = i
+    }
+    if(run.step.aic < run.aic && tabu[i]!=0 &&
+       run.step.aic < best.aic){
+      run.next = run.step
+      run.aic = run.step.aic
+      pos = i
+    }
+    # DECREMENT TABU TERMS
+    if(tabu[i]!=0){tabu[i]=tabu[i]-1}
+    #tabu[i]: The term of tabu for the ith attribute, i from 1 to 27.
+		#Now have moved for one step, thus we have tabu[i]=tabu[i]-1
+		#For attribute recently added into the tabu list, the term is fixed at 7.
+  }
+  if ((run.aic-run.step.aic)>c){
+    tabu[pos]=tabu.term+5
+    #The following is to set the condition that if the change of AIC exceeds some value c, the attribute will be added into the tabu list for longer terms(set as 12)
+  }
+  else{tabu[pos] = tabu.term}
+  run.current = run.next
+  if(run.aic < best.aic){
+    best.aic = run.aic
+    run = run.current
+  }
+  aics[j+1] = run.aic
+}
+
+## OUTPUT
+run         # BEST LIST OF PREDICTORS FOUND
+best.aic    # AIC VALUE # VECTOR OF AIC VALUES  
+}
+
+#Experiment with a series of c
+
+c_Run<-c(1:10)
+#c_BestAIC<-c(1:10)
+
+
+for(j in 1:10){
+ c_Run[j]<-Condition_Attribute_C(j)
+}
+
+c_Run
+
+```
+\
+\ \ Conclusion:
+\
+\ \ Experiment with adding new attributes(whose $\Delta AIC=(AIC_{i}-AIC_{i+1})>c, c= [1,2,...,10]$) into tabu list for extra long tabu terms, we could see from the above that all the results achieve the lowest AIC. The new condition added helps us find the optimal points.
+
